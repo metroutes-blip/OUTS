@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Meter Reader — UAT Testing Schedule</title>
+  <style>
+    :root {
+      --bg: #0f1724;
+      --surface: #1a2438;
+      --surface2: #212f45;
+      --border: rgba(255,255,255,0.08);
+      --gold: #f59e0b;
+      --gold-light: #fcd34d;
+      --text: #e2e8f0;
+      --sub: #94a3b8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --blue: #3b82f6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .site-header {
+      background: var(--surface);
+      border-bottom: 2px solid var(--gold);
+      padding: 20px 20px 16px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .site-header h1 { font-size: 1.4rem; font-weight: 700; color: var(--gold); letter-spacing: 0.04em; }
+    .site-header p  { color: var(--sub); font-size: 0.85rem; margin-top: 4px; }
+
+    main { max-width: 860px; margin: 0 auto; padding: 0 16px 60px; }
+
+    /* ── Meta info bar ── */
+    .meta-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin: 24px 0 16px;
+    }
+    .meta-cell {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+    }
+    .meta-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sub); margin-bottom: 4px; }
+    .meta-value { font-size: 0.95rem; font-weight: 600; color: var(--text); }
+    .meta-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: inherit;
+      padding: 2px 0;
+      outline: none;
+    }
+    .meta-input::placeholder { color: var(--sub); font-weight: 400; }
+
+    /* ── Phase headers ── */
+    .phase {
+      margin-top: 36px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .phase-header {
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .phase-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 3px 10px;
+      border-radius: 20px;
+      flex-shrink: 0;
+    }
+    .phase-online  { background: rgba(34,197,94,0.15); color: #86efac; border: 1px solid rgba(34,197,94,0.3); }
+    .phase-offline { background: rgba(239,68,68,0.12); color: #fca5a5; border: 1px solid rgba(239,68,68,0.25); }
+    .phase-both    { background: rgba(245,158,11,0.12); color: var(--gold-light); border: 1px solid rgba(245,158,11,0.3); }
+    .phase-setup   { background: rgba(59,130,246,0.12); color: #93c5fd; border: 1px solid rgba(59,130,246,0.3); }
+
+    .phase-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .phase-desc  { font-size: 0.85rem; color: var(--sub); margin-top: 2px; }
+
+    /* ── Test table ── */
+    table.tests {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table.tests th {
+      background: var(--surface2);
+      color: var(--sub);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      padding: 8px 14px;
+      text-align: left;
+      font-weight: 600;
+    }
+    table.tests td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      color: var(--sub);
+      font-size: 0.88rem;
+    }
+    table.tests tr:last-child td { border-bottom: none; }
+    table.tests tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .test-id {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--gold);
+      white-space: nowrap;
+    }
+    .test-name {
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+    .test-steps {
+      font-size: 0.83rem;
+      color: var(--sub);
+    }
+    .test-steps ol { padding-left: 16px; margin-top: 4px; }
+    .test-steps li { margin-bottom: 2px; }
+    .expected {
+      font-size: 0.83rem;
+      color: #86efac;
+    }
+
+    /* ── Result cells ── */
+    .result-cell { text-align: center; width: 72px; }
+    .result-box {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      border: 2px solid var(--border);
+      border-radius: 5px;
+    }
+
+    code {
+      background: rgba(255,255,255,0.07);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: monospace;
+      font-size: 0.85em;
+      color: var(--gold-light);
+    }
+
+    .note {
+      background: rgba(245,158,11,0.06);
+      border-left: 3px solid var(--gold);
+      border-radius: 0 8px 8px 0;
+      padding: 10px 14px;
+      margin: 12px 16px;
+      color: var(--sub);
+      font-size: 0.85rem;
+    }
+    .note strong { color: var(--gold-light); }
+
+    /* ── Sign-off ── */
+    .signoff {
+      margin-top: 40px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .signoff-field label {
+      display: block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--sub);
+      margin-bottom: 8px;
+    }
+    .signoff-line {
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+      height: 32px;
+      margin-bottom: 4px;
+    }
+
+    @media print {
+      body { background: #fff; color: #000; font-size: 11px; }
+      :root {
+        --bg: #fff; --surface: #f8f9fa; --surface2: #f0f0f0;
+        --border: rgba(0,0,0,0.12); --gold: #b45309; --gold-light: #92400e;
+        --text: #111; --sub: #555; --green: #15803d; --red: #dc2626; --blue: #1d4ed8;
+      }
+      .site-header { position: static; }
+      .phase { break-inside: avoid; }
+      .result-box { border-color: #aaa; }
+      code { background: #f0f0f0; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1>&#9660; Meter Reader — UAT Testing Schedule</h1>
+  <p>MET OUTS v8.4 &nbsp;·&nbsp; Online &amp; Offline Acceptance Testing</p>
+</header>
+
+<main>
+
+  <div class="meta-bar">
+    <div class="meta-cell">
+      <div class="meta-label">Tester</div>
+      <input class="meta-input" placeholder="Name…" />
+    </div>
+    <div class="meta-cell">
+      <div class="meta-label">Date</div>
+      <input class="meta-input" type="date" />
+    </div>
+    <div class="meta-cell">
+      <div class="meta-label">Device / Browser</div>
+      <input class="meta-input" placeholder="e.g. iPhone 15 / Chrome…" />
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Before you begin:</strong> Have the Grimsby CSV (<code>area 76_cycle 01_routes 01-02_8 stops</code>) ready to load. Run all <span style="color:#93c5fd;">Setup</span> steps first, then complete <span style="color:#86efac;">Online</span> tests, then go offline and run <span style="color:#fca5a5;">Offline</span> tests.
+  </div>
+
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- PHASE 0 — Setup -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="phase">
+    <div class="phase-header">
+      <span class="phase-badge phase-setup">Setup</span>
+      <div>
+        <div class="phase-title">Phase 0 — Pre-Test Setup</div>
+        <div class="phase-desc">Prepare a clean state before starting</div>
+      </div>
+    </div>
+    <table class="tests">
+      <thead><tr>
+        <th style="width:70px;">ID</th>
+        <th>Test &amp; Steps</th>
+        <th>Expected</th>
+        <th class="result-cell">Pass</th>
+        <th class="result-cell">Fail</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="test-id">S-01</td>
+          <td>
+            <div class="test-name">Open the app</div>
+            <div class="test-steps">Navigate to <code>http://localhost:3000</code> (or installed PWA). Wait for splash screen to finish.</div>
+          </td>
+          <td class="expected">PIN lock screen appears</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">S-02</td>
+          <td>
+            <div class="test-name">PIN unlock</div>
+            <div class="test-steps">Enter PIN <code>4959</code> and tap Unlock.</div>
+          </td>
+          <td class="expected">Home screen appears with empty bundle list</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">S-03</td>
+          <td>
+            <div class="test-name">Wrong PIN rejected</div>
+            <div class="test-steps">Enter an incorrect PIN (e.g. <code>1234</code>) and tap Unlock.</div>
+          </td>
+          <td class="expected">"Incorrect PIN" error shown. App stays locked.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">S-04</td>
+          <td>
+            <div class="test-name">Load CSV</div>
+            <div class="test-steps">Tap the upload button. Select the Grimsby CSV file. Enter reader name when prompted. Set rates and tap Load Bundle.</div>
+          </td>
+          <td class="expected">Bundle appears in home list. Summary shows 8 cards, 0 read.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">S-05</td>
+          <td>
+            <div class="test-name">Duplicate load blocked</div>
+            <div class="test-steps">Try loading the same CSV file a second time.</div>
+          </td>
+          <td class="expected">"Bundle already loaded" warning appears. No duplicate cards added.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- PHASE 1 — Online: List & Sort -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="phase">
+    <div class="phase-header">
+      <span class="phase-badge phase-online">Online</span>
+      <div>
+        <div class="phase-title">Phase 1 — Bundle List &amp; Sorting</div>
+        <div class="phase-desc">Verify list display, sort buttons, and filter behaviour</div>
+      </div>
+    </div>
+    <table class="tests">
+      <thead><tr>
+        <th style="width:70px;">ID</th>
+        <th>Test &amp; Steps</th>
+        <th>Expected</th>
+        <th class="result-cell">Pass</th>
+        <th class="result-cell">Fail</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="test-id">L-01</td>
+          <td>
+            <div class="test-name">Default card order</div>
+            <div class="test-steps">Open the bundle. Observe card order with no sort buttons active.</div>
+          </td>
+          <td class="expected">Cards ordered by SEQ: PARKWOOD RD (980) first, ROBINSON ST S last.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">L-02</td>
+          <td>
+            <div class="test-name">SEQ sort ascending / descending</div>
+            <div class="test-steps">Tap <strong>SEQ</strong> once (↑), confirm order. Tap again (↓), confirm reversal. Tap again to clear.</div>
+          </td>
+          <td class="expected">↑ shows PARKWOOD RD first. ↓ shows MAPLE AVE first. Cleared returns to default.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">L-03</td>
+          <td>
+            <div class="test-name">MRU + SEQ multi-sort with priority numbers</div>
+            <div class="test-steps">Tap <strong>MRU ↑</strong> then <strong>SEQ ↑</strong>. Observe button labels.</div>
+          </td>
+          <td class="expected">Buttons show <strong>MRU ↑¹</strong> and <strong>SEQ ↑²</strong>. Route 01 cards appear first in SEQ order, then Route 02 cards in SEQ order.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">L-04</td>
+          <td>
+            <div class="test-name">Street sort</div>
+            <div class="test-steps">Clear all sorts. Tap <strong>Street ↑</strong>.</div>
+          </td>
+          <td class="expected">Cards in alphabetical street order (KINGSWAY BLVD, KINGSWAY CRES, LIVINGSTON AVE…).</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">L-05</td>
+          <td>
+            <div class="test-name">Street No. sort</div>
+            <div class="test-steps">Clear all sorts. Tap <strong>No. ↑</strong>.</div>
+          </td>
+          <td class="expected">Cards ordered numerically: 2, 6, 11, 13, 25, 62, 71, 125.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">L-06</td>
+          <td>
+            <div class="test-name">Missed filter</div>
+            <div class="test-steps">Tap <strong>Missed</strong>. (No cards are read yet, so all 8 should show.)</div>
+          </td>
+          <td class="expected">All 8 unread cards visible.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">L-07</td>
+          <td>
+            <div class="test-name">Search</div>
+            <div class="test-steps">Type <code>kingsway</code> in the search bar.</div>
+          </td>
+          <td class="expected">Only KINGSWAY BLVD and KINGSWAY CRES cards shown.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">L-08</td>
+          <td>
+            <div class="test-name">Arrow navigation matches list order</div>
+            <div class="test-steps">With <strong>SEQ ↑</strong> active, open PARKWOOD RD (first card). Tap the right arrow.</div>
+          </td>
+          <td class="expected">Advances to LIVINGSTON AVE (next card in SEQ order, not CSV order).</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- PHASE 2 — Online: Data Entry -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="phase">
+    <div class="phase-header">
+      <span class="phase-badge phase-online">Online</span>
+      <div>
+        <div class="phase-title">Phase 2 — Data Entry</div>
+        <div class="phase-desc">Verify reading entry, skip, and burger menu features</div>
+      </div>
+    </div>
+    <table class="tests">
+      <thead><tr>
+        <th style="width:70px;">ID</th>
+        <th>Test &amp; Steps</th>
+        <th>Expected</th>
+        <th class="result-cell">Pass</th>
+        <th class="result-cell">Fail</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="test-id">D-01</td>
+          <td>
+            <div class="test-name">Save a reading</div>
+            <div class="test-steps">Open PARKWOOD RD. Enter <code>12345</code> in the Reading field. Tap <strong>Save Reading</strong>.</div>
+          </td>
+          <td class="expected">Card turns green. App advances to next card. Progress bar updates.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">D-02</td>
+          <td>
+            <div class="test-name">Reading locked after save</div>
+            <div class="test-steps">Return to PARKWOOD RD card. Observe the Reading field.</div>
+          </td>
+          <td class="expected">Reading field is locked (read-only). "Delete Reading" appears in burger menu.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">D-03</td>
+          <td>
+            <div class="test-name">Delete and re-enter reading</div>
+            <div class="test-steps">Open burger menu → <strong>Delete Reading</strong> → confirm. Enter <code>99999</code> → Save.</div>
+          </td>
+          <td class="expected">Reading updated to 99999. Card stays green.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">D-04</td>
+          <td>
+            <div class="test-name">Skip a meter</div>
+            <div class="test-steps">Open ROSSMORE AVE. Select <strong>Unsafe Condition</strong> from Skip dropdown. Tap Save.</div>
+          </td>
+          <td class="expected">Card shows striped red pattern. Marked as skipped. Counts as complete.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">D-05</td>
+          <td>
+            <div class="test-name">Phone # — wrong PIN</div>
+            <div class="test-steps">Open ROBINSON ST S card. Open burger menu → <strong>Phone #</strong>. Enter <code>1234</code> → tap View.</div>
+          </td>
+          <td class="expected">"Incorrect PIN" error shown. Numbers remain hidden.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">D-06</td>
+          <td>
+            <div class="test-name">Phone # — correct PIN</div>
+            <div class="test-steps">Enter PIN <code>4959</code> → tap View.</div>
+          </td>
+          <td class="expected">Phone numbers revealed in xxx-xxx-xxxx format as tap-to-call buttons. Customer name not shown.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">D-07</td>
+          <td>
+            <div class="test-name">Phone # — no number on file</div>
+            <div class="test-steps">Open a card with no Res # or Comm # in the CSV. Open burger menu → <strong>Phone #</strong>.</div>
+          </td>
+          <td class="expected">Toast shows "No phone number on file". Modal does not open.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">D-08</td>
+          <td>
+            <div class="test-name">Reverse direction</div>
+            <div class="test-steps">Open burger menu → <strong>Reverse Direction</strong>. Save a reading.</div>
+          </td>
+          <td class="expected">App advances to the previous card (not the next one). Checkmark appears on Reverse Direction item.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- PHASE 3 — Online: Map -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="phase">
+    <div class="phase-header">
+      <span class="phase-badge phase-online">Online</span>
+      <div>
+        <div class="phase-title">Phase 3 — Map View</div>
+        <div class="phase-desc">Verify geocoding, marker colours, and LAT/LON handling</div>
+      </div>
+    </div>
+    <table class="tests">
+      <thead><tr>
+        <th style="width:70px;">ID</th>
+        <th>Test &amp; Steps</th>
+        <th>Expected</th>
+        <th class="result-cell">Pass</th>
+        <th class="result-cell">Fail</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="test-id">M-01</td>
+          <td>
+            <div class="test-name">Map opens and places markers</div>
+            <div class="test-steps">From bundle list tap <strong>Map</strong> in the bottom nav.</div>
+          </td>
+          <td class="expected">Map loads. 7 markers placed immediately (from LAT/LON columns). 1 marker may require geocoding (ROBINSON ST S has no coordinates).</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">M-02</td>
+          <td>
+            <div class="test-name">Marker colours reflect status</div>
+            <div class="test-steps">Observe marker colours on the map.</div>
+          </td>
+          <td class="expected">PARKWOOD RD = green (read). ROSSMORE AVE = gold (skipped). Remaining = blue/purple (unread).</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">M-03</td>
+          <td>
+            <div class="test-name">Marker popup and card link</div>
+            <div class="test-steps">Tap any marker. Tap <strong>Open Card</strong> in the popup.</div>
+          </td>
+          <td class="expected">Card detail view opens for that address.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">M-04</td>
+          <td>
+            <div class="test-name">Deleted bundle markers removed</div>
+            <div class="test-steps">Load a second CSV. Open map — both bundles' markers visible. Return to home, delete first bundle. Open map again.</div>
+          </td>
+          <td class="expected">Only second bundle's markers remain. No ghost markers from deleted bundle.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- PHASE 4 — Online: Home Screen & Admin -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="phase">
+    <div class="phase-header">
+      <span class="phase-badge phase-online">Online</span>
+      <div>
+        <div class="phase-title">Phase 4 — Home Screen &amp; Admin</div>
+        <div class="phase-desc">Refresh App, bundle deletion, recover, report</div>
+      </div>
+    </div>
+    <table class="tests">
+      <thead><tr>
+        <th style="width:70px;">ID</th>
+        <th>Test &amp; Steps</th>
+        <th>Expected</th>
+        <th class="result-cell">Pass</th>
+        <th class="result-cell">Fail</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="test-id">H-01</td>
+          <td>
+            <div class="test-name">Refresh App — online</div>
+            <div class="test-steps">From home screen tap <strong>Refresh App</strong>. Confirm the dialog.</div>
+          </td>
+          <td class="expected">Page reloads. Reading data still present after reload. No data loss.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">H-02</td>
+          <td>
+            <div class="test-name">Delete bundle — online</div>
+            <div class="test-steps">Long-press or swipe a bundle card to reveal delete. Confirm deletion.</div>
+          </td>
+          <td class="expected">App reloads. Bundle no longer in list. Other bundles unaffected.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">H-03</td>
+          <td>
+            <div class="test-name">Recover deleted bundle</div>
+            <div class="test-steps">After deleting a bundle, tap <strong>Recover</strong> bar (if shown) or use the recover option. Select the deleted bundle.</div>
+          </td>
+          <td class="expected">Bundle and all its readings restored to the list.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">H-04</td>
+          <td>
+            <div class="test-name">Bundle report</div>
+            <div class="test-steps">Open a bundle. Tap <strong>Report</strong>. Review the content.</div>
+          </td>
+          <td class="expected">Report shows correct read counts by estimate category. Reader name matches.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">H-05</td>
+          <td>
+            <div class="test-name">Route optimization</div>
+            <div class="test-steps">Open bundle. Tap <strong>Optimize Route</strong>. Tap a starting address.</div>
+          </td>
+          <td class="expected">Cards reorder. <strong>Reset Order</strong> button appears. Arrow navigation follows the new order.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- PHASE 5 — Go Offline -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="note" style="margin-top:32px;">
+    <strong>&#9888; Switch to offline now.</strong> On mobile: enable Airplane Mode. On desktop: disconnect Wi-Fi or use Chrome DevTools → Network → Offline. Verify you have no internet before continuing.
+  </div>
+
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- PHASE 5 — Offline: Core functionality -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="phase">
+    <div class="phase-header">
+      <span class="phase-badge phase-offline">Offline</span>
+      <div>
+        <div class="phase-title">Phase 5 — Offline: Core Functionality</div>
+        <div class="phase-desc">Verify the app works without any network connection</div>
+      </div>
+    </div>
+    <table class="tests">
+      <thead><tr>
+        <th style="width:70px;">ID</th>
+        <th>Test &amp; Steps</th>
+        <th>Expected</th>
+        <th class="result-cell">Pass</th>
+        <th class="result-cell">Fail</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="test-id">O-01</td>
+          <td>
+            <div class="test-name">App loads offline</div>
+            <div class="test-steps">Close the browser tab. Re-open the app URL while offline.</div>
+          </td>
+          <td class="expected">Splash screen and PIN screen load normally. All bundle data intact.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">O-02</td>
+          <td>
+            <div class="test-name">Record readings offline</div>
+            <div class="test-steps">Open a card. Enter a reading. Save. Open several more cards and save readings.</div>
+          </td>
+          <td class="expected">Readings save normally. Progress bar updates. Cards turn green.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">O-03</td>
+          <td>
+            <div class="test-name">Sort and filter offline</div>
+            <div class="test-steps">Use the sort bar and filter buttons on the bundle list.</div>
+          </td>
+          <td class="expected">All sort and filter options work normally. No errors.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">O-04</td>
+          <td>
+            <div class="test-name">Map loads offline (cached tiles)</div>
+            <div class="test-steps">Open the Map view from the bundle list.</div>
+          </td>
+          <td class="expected">Map loads using cached tiles. Markers placed from cached coordinates (LAT/LON). No geocoding error shown for pre-loaded addresses.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">O-05</td>
+          <td>
+            <div class="test-name">Route optimization offline</div>
+            <div class="test-steps">Open bundle → Optimize Route → select starting address.</div>
+          </td>
+          <td class="expected">Optimization runs using straight-line distances. Cards reorder.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">O-06</td>
+          <td>
+            <div class="test-name">Phone # offline</div>
+            <div class="test-steps">Open burger menu → Phone #. Enter PIN <code>4959</code>.</div>
+          </td>
+          <td class="expected">Phone numbers displayed normally. Feature is fully local — no network needed.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">O-07</td>
+          <td>
+            <div class="test-name">Refresh App blocked offline</div>
+            <div class="test-steps">Go to home screen. Tap <strong>Refresh App</strong>.</div>
+          </td>
+          <td class="expected">Toast appears: "No internet connection — connect to Wi-Fi or data first". App does NOT reload. Data safe.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">O-08</td>
+          <td>
+            <div class="test-name">Delete bundle offline</div>
+            <div class="test-steps">Delete a bundle while offline.</div>
+          </td>
+          <td class="expected">Bundle removed. Home re-renders with toast confirmation. App does NOT attempt to reload. Data safe.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">O-09</td>
+          <td>
+            <div class="test-name">Data persists across offline reload</div>
+            <div class="test-steps">Force-close the browser while offline. Reopen the app URL while still offline.</div>
+          </td>
+          <td class="expected">App loads from service worker cache. All readings entered offline are present.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- PHASE 6 — Come back online -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="note" style="margin-top:32px;">
+    <strong>&#9654; Restore internet connection now.</strong> Disable Airplane Mode / re-enable Wi-Fi. Wait for connection to be confirmed before continuing.
+  </div>
+
+  <div class="phase">
+    <div class="phase-header">
+      <span class="phase-badge phase-both">Back Online</span>
+      <div>
+        <div class="phase-title">Phase 6 — Return to Online</div>
+        <div class="phase-desc">Verify offline data is intact and online features resume</div>
+      </div>
+    </div>
+    <table class="tests">
+      <thead><tr>
+        <th style="width:70px;">ID</th>
+        <th>Test &amp; Steps</th>
+        <th>Expected</th>
+        <th class="result-cell">Pass</th>
+        <th class="result-cell">Fail</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="test-id">R-01</td>
+          <td>
+            <div class="test-name">Offline readings preserved</div>
+            <div class="test-steps">Check the bundle list and open the bundle. Review all cards entered offline.</div>
+          </td>
+          <td class="expected">All readings saved offline are present. Progress and counts correct.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">R-02</td>
+          <td>
+            <div class="test-name">Refresh App works online</div>
+            <div class="test-steps">Tap <strong>Refresh App</strong> and confirm.</div>
+          </td>
+          <td class="expected">Page reloads. All data intact after reload.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+        <tr>
+          <td class="test-id">R-03</td>
+          <td>
+            <div class="test-name">Send / email bundle</div>
+            <div class="test-steps">Open a completed bundle. Tap <strong>Send</strong> and select an email provider.</div>
+          </td>
+          <td class="expected">CSV downloads. Email compose window opens. Bundle marked as Sent.</td>
+          <td class="result-cell"><span class="result-box"></span></td>
+          <td class="result-cell"><span class="result-box"></span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- Sign-off -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="signoff">
+    <div class="signoff-field">
+      <label>Tester signature</label>
+      <div class="signoff-line"></div>
+    </div>
+    <div class="signoff-field">
+      <label>Date completed</label>
+      <div class="signoff-line"></div>
+    </div>
+    <div class="signoff-field" style="grid-column: 1 / -1;">
+      <label>Notes / Issues found</label>
+      <div class="signoff-line"></div>
+      <div class="signoff-line" style="margin-top:12px;"></div>
+      <div class="signoff-line" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>
