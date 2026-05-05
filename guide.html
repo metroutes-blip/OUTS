@@ -296,7 +296,7 @@
 <header class="site-header">
   <button class="back-btn" onclick="window.close(); setTimeout(function(){ window.location.href='index.html'; }, 200);">&#8592; Back to App</button>
   <h1>&#9660; Meter Reader — User Guide</h1>
-  <p>Field reference for MET OUTS v8.4</p>
+  <p>Field reference for MET OUTS v7.2</p>
 </header>
 
 <main>
@@ -308,7 +308,7 @@
       <li><a href="#unlock">Unlocking the App</a></li>
       <li><a href="#home">Home Screen</a></li>
       <li><a href="#csv">Loading a Route (CSV)</a></li>
-      <li><a href="#bundle">Bundle List Page &amp; Sorting</a></li>
+      <li><a href="#bundle">Bundle List Page</a></li>
       <li><a href="#card">Data Entry Page</a></li>
       <li><a href="#map">Map View</a></li>
       <li><a href="#report">Report Page</a></li>
@@ -366,10 +366,6 @@
       <div class="card-title">Reader name</div>
       <p>Tap the name at the top to change it. The name is printed on the report.</p>
     </div>
-    <div class="card">
-      <div class="card-title">Refresh App</div>
-      <p>A small <strong>Refresh App</strong> link appears beside the User Guide link. Tap it to clear the cached app files and reload fresh code from the server. Your reading data, geocache, and downloaded map tiles are <strong>not</strong> affected — only the app files are cleared. Requires an internet connection. Use this if you are told a fix has been deployed and you need to update.</p>
-    </div>
   </section>
 
 
@@ -403,21 +399,6 @@
       </tbody>
     </table>
 
-    <h3>Optional columns recognised by the app</h3>
-    <table class="csv-table">
-      <thead>
-        <tr><th>Column header</th><th>Description</th></tr>
-      </thead>
-      <tbody>
-        <tr><td><code>SEQ</code></td><td>Route sequence number used to order cards in the list. Recommended when your routing software assigns a global sequence number.</td></tr>
-        <tr><td><code>READ_ORDER</code></td><td>Alternative sequence number (used as fallback when SEQ is absent).</td></tr>
-        <tr><td><code>LAT</code> / <code>LON</code></td><td>Pre-computed decimal coordinates. When present, the app places markers directly on the map without calling the geocoding service — faster and works fully offline.</td></tr>
-        <tr><td><code>Res #</code></td><td>Residential phone number. Viewable via the burger menu in the card detail screen (PIN required).</td></tr>
-        <tr><td><code>Comm #</code></td><td>Commercial phone number. Viewable via the burger menu in the card detail screen (PIN required).</td></tr>
-        <tr><td><code>MRU id</code></td><td>Six-digit code encoding cycle (digits 1–2), area (digits 3–4), and route (digits 5–6). Used for the MRU sort and bundle deduplication.</td></tr>
-      </tbody>
-    </table>
-
     <div class="tip">
       <strong>Tip:</strong> Any extra columns in the CSV are preserved and will appear in the exported file unchanged.
     </div>
@@ -445,22 +426,6 @@
       <li style="margin-bottom:6px;">Open the bundle report</li>
       <li style="margin-bottom:6px;">Mark the bundle as Sent</li>
     </ul>
-
-    <h3>Sorting the list</h3>
-    <p>A <strong>Sort</strong> bar appears below the filter row with five toggle buttons. Each tap cycles the button through off → ↑ ascending → ↓ descending → off.</p>
-    <div class="card">
-      <p>
-        <strong style="color:var(--text);">Street</strong> — alphabetical by street name<br>
-        <strong style="color:var(--text);">No.</strong> — by street number<br>
-        <strong style="color:var(--text);">MRU</strong> — by MRU id (groups routes together)<br>
-        <strong style="color:var(--text);">Read Order</strong> — by the <code>READ_ORDER</code> column in the CSV<br>
-        <strong style="color:var(--text);">SEQ</strong> — by the <code>SEQ</code> column in the CSV
-      </p>
-    </div>
-    <p>Multiple sorts can be active at the same time. When more than one is active, each button shows a superscript priority number (e.g. <strong>MRU ↑¹  SEQ ↑²</strong>) indicating which is applied first.</p>
-    <div class="tip">
-      <strong>Multiple routes:</strong> If your CSV has independent SEQ numbers per route, activate <strong>MRU ↑</strong> first (priority 1) then <strong>SEQ ↑</strong> (priority 2). This groups cards by route and orders them by sequence within each route.
-    </div>
 
     <h3>Estimate totals</h3>
     <p>The header shows estimated counts split by meter size category:</p>
@@ -542,10 +507,6 @@
       <p>Opens the bundle report page directly.</p>
     </div>
     <div class="card">
-      <div class="card-title">Phone # <span class="badge badge-blue">PIN required</span></div>
-      <p>Shows the residential and/or commercial phone number on file for this address. Enter the app PIN to reveal the number. Tap the number to dial directly. Only appears if phone number columns are present in the CSV.</p>
-    </div>
-    <div class="card">
       <div class="card-title">Delete Reading <span class="badge badge-red">locked cards only</span></div>
       <p>Removes a saved reading so it can be re-entered. A confirmation warning is shown before deletion.</p>
     </div>
@@ -617,7 +578,7 @@
     </ol>
 
     <h3>Geocoding</h3>
-    <p>When the map is opened, the app places each address on the map. If your CSV includes <code>LAT</code> and <code>LON</code> columns the coordinates are used directly — no internet call is made and the map works immediately offline. For addresses without pre-loaded coordinates, the app calls OpenStreetMap to look them up. Geocoded positions are cached so the map works offline on subsequent visits.</p>
+    <p>When a bundle is opened, the app geocodes all addresses using OpenStreetMap. Geocoded positions are cached so the map works offline after the first load. Use <strong>Geocode All</strong> on the bundle page while you have a signal before heading into the field.</p>
 
     <div class="tip">
       <strong>Tip:</strong> Map tiles are also cached for offline use. Zoom into your work area while online so the tiles are stored.
@@ -737,9 +698,8 @@
       <p>When multiple meters share the same address, the map shows a picker so you can select the correct unit before opening its card.</p>
     </div>
     <div class="card" style="border-color: var(--red);">
-      <div class="card-title" style="color:#fca5a5;">&#9888; Be careful when clearing browser data</div>
-      <p>Readings, bundle data, geocache, and settings live in the browser's <strong>site data / localStorage</strong>. Clearing <em>site data</em> or <em>cookies</em> <strong style="color:#fca5a5;">will permanently delete everything</strong>. Always export your CSV or confirm your auto-backup folder is set first.</p>
-      <p style="margin-top:8px;">Clearing <em>cached images and files</em> only removes the app code — your data is safe. The <strong>Refresh App</strong> button on the home screen does exactly this safely.</p>
+      <div class="card-title" style="color:#fca5a5;">&#9888; Do not clear your browser cache</div>
+      <p>All readings, bundle data, geocache, and settings are stored in the browser. Clearing your browser cache or site data <strong style="color:#fca5a5;">will permanently delete everything</strong> that has not been exported or backed up. Always export your CSV or confirm your auto-backup folder is set before clearing any browser data.</p>
     </div>
 
     <div class="card">

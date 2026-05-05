@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v8.3';
+  const APP_VERSION = 'v9.0';
 
   // ─── State ────────────────────────────────────────
   let allRecords = [];         // all CSV rows
@@ -49,12 +49,7 @@
   let bdShowMissed = false;  // bundle list filter: unread cards
   let bdShowSkipped = false;  // bundle list filter: skipped cards
   let bdRouteFilter = '';    // bundle list filter: selected route num (last 2 digits of MRU id)
-  let bdSortName  = '';  // '' | 'asc' | 'desc'
-  let bdSortNum   = '';  // '' | 'asc' | 'desc'
-  let bdSortMru   = '';  // '' | 'asc' | 'desc'
-  let bdSortOrder = '';  // '' | 'asc' | 'desc'
-  let bdSortSeq   = '';  // '' | 'asc' | 'desc'
-  let currentSortedRows = [];  // the display-sorted rows for card-to-card navigation
+  let bdSortOrder = [];      // active sort keys in priority order: 'MRU' | 'READ_ORDER' | 'SEQ'
   let backupBarShown = false;  // session flag — show daily backup bar only once
   let autoSaveTimer = null;   // debounce handle for silent CSV auto-save
 
@@ -112,14 +107,8 @@
   const addressList = document.getElementById('address-list');
   const bdFilterMissedBtn = document.getElementById('bd-filter-missed');
   const bdFilterSkippedBtn = document.getElementById('bd-filter-skipped');
-  const bdSortNameBtn  = document.getElementById('bd-sort-name-btn');
-  const bdSortNumBtn   = document.getElementById('bd-sort-num-btn');
-  const bdSortMruBtn   = document.getElementById('bd-sort-mru-btn');
-  const bdSortOrderBtn = document.getElementById('bd-sort-order-btn');
-  const bdSortSeqBtn   = document.getElementById('bd-sort-seq-btn');
   document.getElementById('bundle-back-btn').addEventListener('click', goHome);
   document.getElementById('bd-nav-bundles').addEventListener('click', goHome);
-  document.getElementById('bd-nav-list').addEventListener('click', () => { /* already on list */ });
   document.getElementById('bd-nav-map').addEventListener('click', () => {
     viewBundle.classList.add('hidden');
     showMapView();
@@ -127,6 +116,18 @@
   document.getElementById('totals-back-btn').addEventListener('click', () => {
     viewTotals.classList.add('hidden');
     viewBundle.classList.remove('hidden');
+  });
+  document.getElementById('totals-nav-bundles').addEventListener('click', () => {
+    viewTotals.classList.add('hidden');
+    goHome();
+  });
+  document.getElementById('totals-nav-list').addEventListener('click', () => {
+    viewTotals.classList.add('hidden');
+    viewBundle.classList.remove('hidden');
+  });
+  document.getElementById('totals-nav-map').addEventListener('click', () => {
+    viewTotals.classList.add('hidden');
+    showMapView();
   });
   document.getElementById('totals-print-btn').addEventListener('click', () => window.print());
 
@@ -162,12 +163,15 @@
   document.getElementById('card-back-btn').addEventListener('click', cardGoBack);
   document.getElementById('card-nav-bundles').addEventListener('click', () => {
     viewCard.classList.add('hidden');
+    viewBundle.classList.add('hidden');
     goHome();
   });
+
   document.getElementById('card-nav-list').addEventListener('click', () => {
     viewCard.classList.add('hidden');
     viewBundle.classList.remove('hidden');
   });
+
   document.getElementById('card-nav-map').addEventListener('click', () => {
     viewCard.classList.add('hidden');
     viewBundle.classList.add('hidden');
@@ -230,61 +234,6 @@
     viewCard.classList.add('hidden');
     showTotalsView(currentBundle);
   });
-
-  const phoneModal         = document.getElementById('phone-modal');
-  const phonePinSection    = document.getElementById('phone-pin-section');
-  const phoneNumberSection = document.getElementById('phone-numbers-section');
-  const phonePinInput      = document.getElementById('phone-pin-input');
-  const phonePinError      = document.getElementById('phone-pin-error');
-
-  function closePhoneModal() {
-    phoneModal.classList.add('hidden');
-    phonePinSection.classList.remove('hidden');
-    phoneNumberSection.classList.add('hidden');
-    phonePinInput.value = '';
-    phonePinError.classList.add('hidden');
-  }
-
-  document.getElementById('card-menu-phone').addEventListener('click', () => {
-    closeCardMenu();
-    const res  = (currentRow['Res #']  || '').trim();
-    const comm = (currentRow['Comm #'] || '').trim();
-    if (!res && !comm) { showToast('No phone number on file'); return; }
-    phonePinInput.value = '';
-    phonePinError.classList.add('hidden');
-    phonePinSection.classList.remove('hidden');
-    phoneNumberSection.classList.add('hidden');
-    phoneModal.classList.remove('hidden');
-    setTimeout(() => phonePinInput.focus(), 50);
-  });
-
-  document.getElementById('phone-pin-confirm').addEventListener('click', () => {
-    if (phonePinInput.value !== APP_PIN) {
-      phonePinError.classList.remove('hidden');
-      phonePinInput.value = '';
-      return;
-    }
-    const res  = (currentRow['Res #']  || '').trim();
-    const comm = (currentRow['Comm #'] || '').trim();
-    const fmtPhone = (n) => {
-      const d = n.replace(/\D/g, '');
-      return d.length === 10 ? `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}` : n;
-    };
-    const svgPhone = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6 6l.86-.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
-    document.getElementById('phone-modal-numbers').innerHTML = [
-      res  ? `<a href="tel:${esc(res)}"  class="phone-modal-number">${svgPhone}<span><span class="phone-modal-label">Res</span>${esc(fmtPhone(res))}</span></a>`  : '',
-      comm ? `<a href="tel:${esc(comm)}" class="phone-modal-number">${svgPhone}<span><span class="phone-modal-label">Comm</span>${esc(fmtPhone(comm))}</span></a>` : '',
-    ].join('');
-    phonePinSection.classList.add('hidden');
-    phoneNumberSection.classList.remove('hidden');
-  });
-
-  phonePinInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') document.getElementById('phone-pin-confirm').click();
-  });
-
-  document.getElementById('phone-modal-cancel').addEventListener('click', closePhoneModal);
-  document.getElementById('phone-modal-close').addEventListener('click', closePhoneModal);
 
   document.getElementById('card-menu-delete-reading').addEventListener('click', () => {
     closeCardMenu();
@@ -381,12 +330,16 @@
     pendingBundleGroups = [];
   });
 
-  document.getElementById('home-nav-list').addEventListener('click', () => {
-    if (currentBundle) { viewHome.classList.add('hidden'); viewBundle.classList.remove('hidden'); }
-  });
-
   // Map tab navigation
   homeNavMap.addEventListener('click', showMapView);
+  document.getElementById('home-nav-list').addEventListener('click', () => {
+    if (currentBundle) {
+      viewHome.classList.add('hidden');
+      showBundleDetail(currentBundle, true);
+    } else {
+      showToast('Open a bundle first');
+    }
+  });
   mapNavBundles.addEventListener('click', () => {
     if (leafletMap) leafletMap.stopLocate();
     clearGpsTimer();
@@ -396,15 +349,11 @@
   document.getElementById('map-nav-list').addEventListener('click', () => {
     if (leafletMap) leafletMap.stopLocate();
     clearGpsTimer();
-    viewMap.classList.add('hidden');
-    const filterKey = mapBundleFilter.value;
-    const target = filterKey
-      ? bundles.find(b => b.key === filterKey) || currentBundle
-      : currentBundle;
-    if (target) {
-      showBundleDetail(target);
+    if (currentBundle) {
+      viewMap.classList.add('hidden');
+      showBundleDetail(currentBundle, true);
     } else {
-      viewHome.classList.remove('hidden');
+      showToast('Open a bundle first');
     }
   });
 
@@ -591,7 +540,7 @@
     optimizeBtn.disabled = true;
 
     const { ordered, usedRoads } = await computeOptimizedOrder(rows, startRow);
-    ordered.forEach((r, i) => { r['Seq #'] = i + 1; });
+    ordered.forEach((r, i) => { r['READ_ORDER'] = i + 1; });
     bundle.rows = ordered;
     routeOptimized = true;
 
@@ -605,8 +554,7 @@
 
   function resetRouteOrder() {
     if (!originalRowsOrder) return;
-    // Restore original Seq # values
-    originalRowsOrder.forEach((r, i) => { r['Seq #'] = i + 1; });
+    originalRowsOrder.forEach((r, i) => { r['READ_ORDER'] = i + 1; });
     currentBundle.rows = originalRowsOrder.slice();
     originalRowsOrder = null;
     routeOptimized = false;
@@ -888,8 +836,16 @@
   function geocodeAllRecords(progressCb) {
     const cache = loadGeoCache();
     const tasks = [];
+    const results = [];
+    const failures = [];
     bundles.forEach(bundle => {
       bundle.rows.forEach(row => {
+        const lat = parseFloat(row['LAT']);
+        const lng = parseFloat(row['LON']);
+        if (isFinite(lat) && isFinite(lng)) {
+          results.push({ lat, lng, row, bundle });
+          return;
+        }
         const num = (row['#'] || '').trim();
         const street = (row['STREET'] || '').trim();
         const city = (row['City'] || '').trim();
@@ -898,27 +854,12 @@
         tasks.push({ row, bundle, num, street, city, mapAddress });
       });
     });
-    const results = [];
-    const failures = [];
     let doneCount = 0;
     const total = tasks.length;
 
     function processNext(i) {
       if (i >= total) return Promise.resolve({ points: results, failures });
       const { row, bundle, num, street, city, mapAddress } = tasks[i];
-
-      // Use pre-loaded coordinates from the bundle CSV if present
-      const preLat = parseFloat(row['LAT']);
-      const preLng = parseFloat(row['LON']);
-      if (!isNaN(preLat) && !isNaN(preLng)) {
-        doneCount++;
-        progressCb(doneCount, total);
-        const key = mapAddress ? mapAddress.trim().toLowerCase() : `${num} ${street},${city}`.trim().toLowerCase();
-        if (!cache[key]) { cache[key] = { lat: preLat, lng: preLng }; saveGeoCache(cache); }
-        results.push({ lat: preLat, lng: preLng, row, bundle });
-        return processNext(i + 1);
-      }
-
       return geocodeAddress(num, street, city, cache, mapAddress).then(({ coords, count }) => {
         doneCount++;
         progressCb(doneCount, total);
@@ -973,6 +914,7 @@
     if (!leafletMap) return;
     const label = document.getElementById('map-download-label');
     const btn = document.getElementById('map-download-btn');
+    const minZoom = parseInt(document.getElementById('map-download-size').value, 10);
 
     const bounds = leafletMap.getBounds();
     const latPad = (bounds.getNorth() - bounds.getSouth()) * 0.15;
@@ -980,39 +922,40 @@
     const N = bounds.getNorth() + latPad, S = bounds.getSouth() - latPad;
     const E = bounds.getEast() + lngPad, W = bounds.getWest() - lngPad;
 
-    const SUB = ['a', 'b', 'c'];
+    const SUB = ['a', 'b', 'c', 'd'];
     const urls = [];
-    for (let z = 12; z <= 18; z++) {
+    for (let z = minZoom; z <= 18; z++) {
       const min = latLngToTileXY(N, W, z);
       const max = latLngToTileXY(S, E, z);
       for (let x = min.x; x <= max.x; x++) {
         for (let y = min.y; y <= max.y; y++) {
-          urls.push(`https://${SUB[(x + y) % 3]}.tile.openstreetmap.org/${z}/${x}/${y}.png`);
+          urls.push(`https://${SUB[(x + y) % 4]}.basemaps.cartocdn.com/light_all/${z}/${x}/${y}.png`);
         }
       }
     }
 
-    if (urls.length > 3000) {
-      showToast(`Area too large (${urls.length} tiles). Zoom in closer first.`, true);
-      return;
+    const total = urls.length;
+
+    // Warn for large downloads but still allow them
+    if (total > 10000) {
+      showToast(`Downloading ${total.toLocaleString()} tiles — this may take a few minutes…`);
     }
 
     btn.disabled = true;
-    let done;
-    const total = urls.length;
-    const BATCH = 8;
+    let done = 0;
+    const BATCH = 16;
 
     for (let i = 0; i < urls.length; i += BATCH) {
       await Promise.all(
         urls.slice(i, i + BATCH).map(u => fetch(u, { mode: 'cors' }).catch(() => { }))
       );
       done = Math.min(i + BATCH, total);
-      label.textContent = `${done} / ${total}`;
+      label.textContent = `${done.toLocaleString()} / ${total.toLocaleString()}`;
     }
 
     btn.disabled = false;
     label.textContent = '✓ Map Saved';
-    showToast(`${total} tiles cached — map works offline`);
+    showToast(`${total.toLocaleString()} tiles cached — map works offline`);
     setTimeout(() => { label.textContent = 'Download Map'; }, 4000);
   }
 
@@ -1023,9 +966,9 @@
       return;
     }
     leafletMap = L.map('map-container', { zoomControl: true });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
+      subdomains: ['a', 'b', 'c', 'd'],
       maxZoom: 19
     }).addTo(leafletMap);
 
@@ -1205,46 +1148,47 @@
     initLeafletMap();
     if (!mapInitialized) return;  // Leaflet failed to load — bail out
 
-    // Double-rAF: ensures Leaflet measures container after layout is complete
+    // Double-rAF: ensures Leaflet measures container after layout is complete,
+    // then starts geocoding/marker placement so fitBounds sees the correct size.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         if (leafletMap) leafletMap.invalidateSize();
+
+        // Already geocoded and not stale — just refresh marker colors and return
+        if ((geocodedPoints.length || geocodeFailures.length) && !geocodeStale) {
+          placeMarkers(geocodedPoints);
+          updateNotFoundBar();
+          populateBundleFilter();
+          return;
+        }
+
+        if (geocodePending) return;  // geocode in progress — wait for it
+
+        geocodeStale = false;
+        geocodePending = true;
+        mapGeocodeBar.classList.remove('hidden');
+        mapGeocodeFill.style.width = '0%';
+        mapGeocodeLabel.textContent = 'Geocoding addresses…';
+
+        geocodeAllRecords((done, total) => {
+          const pct = total > 0 ? Math.round((done / total) * 100) : 100;
+          mapGeocodeFill.style.width = `${pct}%`;
+          mapGeocodeLabel.textContent = `Geocoding… ${done} / ${total}`;
+        }).then(({ points, failures }) => {
+          geocodePending = false;
+          geocodedPoints = points;
+          geocodeFailures = failures;
+          mapGeocodeBar.classList.add('hidden');
+          placeMarkers(points);
+          updateNotFoundBar();
+          if (!points.length) showToast('No addresses could be geocoded.', true);
+          else showToast(`${points.length} mapped${failures.length ? `, ${failures.length} not found` : ''}`);
+        }).catch(() => {
+          geocodePending = false;
+          mapGeocodeBar.classList.add('hidden');
+          showToast('Geocoding failed — check your connection and try again.', true);
+        });
       });
-    });
-
-    // Already geocoded and not stale — just refresh marker colors and return
-    if ((geocodedPoints.length || geocodeFailures.length) && !geocodeStale) {
-      placeMarkers(geocodedPoints);
-      updateNotFoundBar();
-      populateBundleFilter();
-      return;
-    }
-
-    if (geocodePending) return;  // geocode in progress — wait for it
-
-    geocodeStale = false;
-    geocodePending = true;
-    mapGeocodeBar.classList.remove('hidden');
-    mapGeocodeFill.style.width = '0%';
-    mapGeocodeLabel.textContent = 'Geocoding addresses…';
-
-    geocodeAllRecords((done, total) => {
-      const pct = total > 0 ? Math.round((done / total) * 100) : 100;
-      mapGeocodeFill.style.width = `${pct}%`;
-      mapGeocodeLabel.textContent = `Geocoding… ${done} / ${total}`;
-    }).then(({ points, failures }) => {
-      geocodePending = false;
-      geocodedPoints = points;
-      geocodeFailures = failures;
-      mapGeocodeBar.classList.add('hidden');
-      placeMarkers(points);
-      updateNotFoundBar();
-      if (!points.length) showToast('No addresses could be geocoded.', true);
-      else showToast(`${points.length} mapped${failures.length ? `, ${failures.length} not found` : ''}`);
-    }).catch(() => {
-      geocodePending = false;
-      mapGeocodeBar.classList.add('hidden');
-      showToast('Geocoding failed — check your connection and try again.', true);
     });
   }
 
@@ -1452,14 +1396,9 @@
 
     // Check if a non-empty Bundle column exists
     const hasBundle = records.some(r => (r['Bundle'] || '').trim() !== '');
-    const getBaseKey = (r) => hasBundle
+    const getKey = (r) => hasBundle
       ? ((r['Bundle'] || '').trim() || (r['City'] || '').trim() || 'Unknown')
       : ((r['City'] || '').trim() || 'Unknown');
-    const getKey = (r) => {
-      const base = getBaseKey(r);
-      const cycle = String((r['MRU id'] || '').trim()).padStart(6, '0').substring(0, 2);
-      return cycle !== '00' ? `${base}|${cycle}` : base;
-    };
 
     const map = new Map();
     records.forEach(r => {
@@ -1495,7 +1434,7 @@
       const est3Read = est3Rows.filter(isRead).length;
       const est46Read = est46Rows.filter(isRead).length;
       const est7plusRead = est7plusRows.filter(isRead).length;
-      return { key, bundleName: getBaseKey(rows[0]), mruIds, routeNums, mruCycle, mruArea, bundleId, rows, city, total, read, est3, est46, est7plus, est3Read, est46Read, est7plusRead };
+      return { key, bundleName: key, mruIds, routeNums, mruCycle, mruArea, bundleId, rows, city, total, read, est3, est46, est7plus, est3Read, est46Read, est7plusRead };
     });
   }
 
@@ -1731,7 +1670,8 @@
     const loc = (row['LOC'] || '').trim();
     const spec = (row['SPEC INSTRUCTIONS'] || '').trim();
 
-    cardDtSeq.textContent = `Seq #${row['Seq #'] || '—'}`;
+    const mruId = (row['MRU id'] || '').trim().padStart(6, '0');
+    cardDtSeq.textContent = `Seq #${row['SEQ'] || row['Seq #'] || '—'}  ·  MRU ${mruId || '—'}`;
     cardDtAddress.textContent = address || '—';
     cardDtCity.textContent = row['City'] || '—';
     const instrument = (row['Instrument'] || '').trim();
@@ -1775,8 +1715,8 @@
     cardDtReadDate.readOnly = isComplete;
     cardDtReadDate.classList.toggle('date-locked', isComplete);
 
-    // Prev / next nav — use display-sorted order so arrows match the list
-    const rows = currentSortedRows.length ? currentSortedRows : bundle.rows;
+    // Prev / next nav — use sorted order to match the address list
+    const rows = sortBundleRows(bundle.rows);
     const idx = rows.indexOf(row);
     cardNavPos.textContent = `${idx + 1} / ${rows.length}`;
     const complete = rows.filter(r => (r['READING'] || '').trim() || (r['SKIP'] || '').trim()).length;
@@ -1790,13 +1730,13 @@
   }
 
   cardPrevBtn.addEventListener('click', () => {
-    const rows = currentSortedRows;
+    const rows = sortBundleRows(currentBundle.rows);
     const idx = rows.indexOf(currentRow);
     if (idx > 0) showCardDetail(rows[idx - 1], currentBundle);
   });
 
   cardNextBtn.addEventListener('click', () => {
-    const rows = currentSortedRows;
+    const rows = sortBundleRows(currentBundle.rows);
     const idx = rows.indexOf(currentRow);
     if (idx < rows.length - 1) showCardDetail(rows[idx + 1], currentBundle);
   });
@@ -1839,7 +1779,7 @@
     cardDtSaveBtn.disabled = true;
     playDing();
 
-    const rows = currentSortedRows;
+    const rows = sortBundleRows(currentBundle.rows);
     const savedIdx = rows.indexOf(currentRow);
 
     setTimeout(() => {
@@ -1966,57 +1906,6 @@
     applyBdFilters();
   });
 
-  const SORT_DEFS = [
-    { key: 'bdSortName',  btn: () => bdSortNameBtn,  base: 'Street' },
-    { key: 'bdSortNum',   btn: () => bdSortNumBtn,   base: 'No.' },
-    { key: 'bdSortMru',   btn: () => bdSortMruBtn,   base: 'MRU' },
-    { key: 'bdSortOrder', btn: () => bdSortOrderBtn, base: 'Read Order' },
-    { key: 'bdSortSeq',   btn: () => bdSortSeqBtn,   base: 'SEQ' },
-  ];
-  const SUPER = ['¹','²','³','⁴','⁵'];
-
-  function updateAllSortBtns() {
-    const dirs = {
-      bdSortName: bdSortName, bdSortNum: bdSortNum, bdSortMru: bdSortMru,
-      bdSortOrder: bdSortOrder, bdSortSeq: bdSortSeq,
-    };
-    const active = SORT_DEFS.filter(s => dirs[s.key] !== '');
-    const showPri = active.length > 1;
-    SORT_DEFS.forEach(s => {
-      const dir = dirs[s.key];
-      const arrow = dir === 'asc' ? ' ↑' : dir === 'desc' ? ' ↓' : '';
-      const pri = showPri && dir ? SUPER[active.indexOf(s)] : '';
-      s.btn().textContent = s.base + arrow + pri;
-      s.btn().classList.toggle('active', dir !== '');
-    });
-  }
-
-  bdSortNameBtn.addEventListener('click', () => {
-    bdSortName = bdSortName === '' ? 'asc' : bdSortName === 'asc' ? 'desc' : '';
-    updateAllSortBtns();
-    if (currentBundle) showBundleDetail(currentBundle, true);
-  });
-  bdSortOrderBtn.addEventListener('click', () => {
-    bdSortOrder = bdSortOrder === '' ? 'asc' : bdSortOrder === 'asc' ? 'desc' : '';
-    updateAllSortBtns();
-    if (currentBundle) showBundleDetail(currentBundle, true);
-  });
-  bdSortSeqBtn.addEventListener('click', () => {
-    bdSortSeq = bdSortSeq === '' ? 'asc' : bdSortSeq === 'asc' ? 'desc' : '';
-    updateAllSortBtns();
-    if (currentBundle) showBundleDetail(currentBundle, true);
-  });
-  bdSortNumBtn.addEventListener('click', () => {
-    bdSortNum = bdSortNum === '' ? 'asc' : bdSortNum === 'asc' ? 'desc' : '';
-    updateAllSortBtns();
-    if (currentBundle) showBundleDetail(currentBundle, true);
-  });
-  bdSortMruBtn.addEventListener('click', () => {
-    bdSortMru = bdSortMru === '' ? 'asc' : bdSortMru === 'asc' ? 'desc' : '';
-    updateAllSortBtns();
-    if (currentBundle) showBundleDetail(currentBundle, true);
-  });
-
   document.getElementById('bd-route-filter').addEventListener('change', (e) => {
     bdRouteFilter = e.target.value;
     applyBdFilters();
@@ -2128,6 +2017,69 @@
     viewTotals.classList.remove('hidden');
   }
 
+  // ─── Sort helpers ─────────────────────────────────
+  function sortBundleRows(rows) {
+    if (!bdSortOrder.length) {
+      return [...rows].sort((a, b) => {
+        const sa = parseInt(a['READ_ORDER'] || a['Seq #'] || '0', 10);
+        const sb = parseInt(b['READ_ORDER'] || b['Seq #'] || '0', 10);
+        return sa - sb;
+      });
+    }
+    return [...rows].sort((a, b) => {
+      for (const key of bdSortOrder) {
+        if (key === 'MRU') {
+          const va = (a['MRU id'] || '').trim().padStart(6, '0');
+          const vb = (b['MRU id'] || '').trim().padStart(6, '0');
+          const cmp = va.localeCompare(vb);
+          if (cmp !== 0) return cmp;
+        } else if (key === 'READ_ORDER') {
+          const va = parseInt(a['READ_ORDER'] || a['Seq #'] || '0', 10);
+          const vb = parseInt(b['READ_ORDER'] || b['Seq #'] || '0', 10);
+          if (va !== vb) return va - vb;
+        } else if (key === 'SEQ') {
+          const va = parseInt(a['SEQ'] || a['Seq #'] || '0', 10);
+          const vb = parseInt(b['SEQ'] || b['Seq #'] || '0', 10);
+          if (va !== vb) return va - vb;
+        }
+      }
+      return 0;
+    });
+  }
+
+  function updateSortBadges() {
+    [
+      { key: 'MRU', badgeId: 'bd-sort-mru-badge', btnId: 'bd-sort-mru' },
+      { key: 'READ_ORDER', badgeId: 'bd-sort-readorder-badge', btnId: 'bd-sort-readorder' },
+      { key: 'SEQ', badgeId: 'bd-sort-seq-badge', btnId: 'bd-sort-seq' },
+    ].forEach(({ key, badgeId, btnId }) => {
+      const badge = document.getElementById(badgeId);
+      const btn = document.getElementById(btnId);
+      const pos = bdSortOrder.indexOf(key);
+      if (pos === -1) {
+        badge.classList.add('hidden');
+        badge.textContent = '';
+        btn.classList.remove('active');
+      } else {
+        badge.textContent = pos + 1;
+        badge.classList.remove('hidden');
+        btn.classList.add('active');
+      }
+    });
+  }
+
+  function toggleSort(key) {
+    const idx = bdSortOrder.indexOf(key);
+    if (idx === -1) bdSortOrder.push(key);
+    else bdSortOrder.splice(idx, 1);
+    updateSortBadges();
+    if (currentBundle) showBundleDetail(currentBundle, true);
+  }
+
+  document.getElementById('bd-sort-mru').addEventListener('click', () => toggleSort('MRU'));
+  document.getElementById('bd-sort-readorder').addEventListener('click', () => toggleSort('READ_ORDER'));
+  document.getElementById('bd-sort-seq').addEventListener('click', () => toggleSort('SEQ'));
+
   // ─── Bundle Detail View ───────────────────────────
   function showBundleDetail(bundle, forcePreserveSearch) {
     pendingBundle = null;
@@ -2139,9 +2091,9 @@
       if (pickStartMode) exitPickStartMode();
       routeOptimized = false;
       originalRowsOrder = null;
+      bdSortOrder = [];
+      updateSortBadges();
       document.getElementById('bd-reset-order-btn').classList.add('hidden');
-      bdSortName = ''; bdSortNum = ''; bdSortMru = ''; bdSortOrder = ''; bdSortSeq = '';
-      updateAllSortBtns();
     }
     currentBundle = bundle;
 
@@ -2174,36 +2126,7 @@
 
     bdReaderName.textContent = readerName;
 
-    const sorted = [...bundle.rows].sort((a, b) => {
-      if (bdSortName) {
-        const cmp = (a['STREET'] || '').localeCompare(b['STREET'] || '');
-        if (cmp !== 0) return bdSortName === 'asc' ? cmp : -cmp;
-      }
-      if (bdSortNum) {
-        const na = parseInt(a['#'] || '0', 10);
-        const nb = parseInt(b['#'] || '0', 10);
-        if (na !== nb) return bdSortNum === 'asc' ? na - nb : nb - na;
-      }
-      if (bdSortMru) {
-        const ma = (a['MRU id'] || '').trim().padStart(6, '0');
-        const mb = (b['MRU id'] || '').trim().padStart(6, '0');
-        const cmp = ma.localeCompare(mb);
-        if (cmp !== 0) return bdSortMru === 'asc' ? cmp : -cmp;
-      }
-      if (bdSortOrder) {
-        const oa = parseInt(a['READ_ORDER'] || '0', 10) || Infinity;
-        const ob = parseInt(b['READ_ORDER'] || '0', 10) || Infinity;
-        if (oa !== ob) return bdSortOrder === 'asc' ? oa - ob : ob - oa;
-      }
-      if (bdSortSeq) {
-        const oa = parseInt(a['SEQ'] || '0', 10) || Infinity;
-        const ob = parseInt(b['SEQ'] || '0', 10) || Infinity;
-        if (oa !== ob) return bdSortSeq === 'asc' ? oa - ob : ob - oa;
-      }
-      const seqVal = (r) => parseInt(r['Seq #'] || '0', 10) || parseInt(r['SEQ'] || '0', 10) || parseInt(r['READ_ORDER'] || '0', 10) || Infinity;
-      return seqVal(a) - seqVal(b);
-    });
-    currentSortedRows = sorted;
+    const sorted = sortBundleRows(bundle.rows);
 
     const preserveSearch = forcePreserveSearch || !isNewBundle;
     const savedSearch = preserveSearch ? bdSearch.value : '';
@@ -2233,7 +2156,8 @@
     const frag = document.createDocumentFragment();
 
     sorted.forEach(row => {
-      const seq = row['Seq #'] || '';
+      const seq = row['SEQ'] || row['Seq #'] || '';
+      const mruId = (row['MRU id'] || '').trim().padStart(6, '0');
       const num = row['#'] || '';
       const street = row['STREET'] || '';
       const address = [num, street].filter(Boolean).join(' ');
@@ -2267,7 +2191,7 @@
       card.dataset.status = skip ? 'skip' : reading ? 'read' : 'unread';
       card.dataset.route = (row['MRU id'] || '').trim().padStart(6, '0');
       card.innerHTML = `
-        <div class="addr-seq">${esc(seq)}</div>
+        <div class="addr-seq">Seq #${esc(seq)}${mruId ? `  ·  MRU ${esc(mruId)}` : ''}</div>
         <div class="addr-info">
           <div class="addr-street">${esc(address) || '—'}</div>
           ${meterMeta ? `<div class="addr-meter">${esc(meterMeta)}</div>` : ''}
@@ -2308,6 +2232,26 @@
     allRecords = [...allRecords, ...records];
     bundles = groupIntoBundles(allRecords);
     geocodedPoints = [];  // reset so map re-geocodes with new addresses
+
+    // Pre-cache any LAT/LON values from the CSV so the map opens without API calls
+    const geoCache = loadGeoCache();
+    let cacheUpdated = false;
+    records.forEach(row => {
+      const lat = parseFloat(row['LAT']);
+      const lng = parseFloat(row['LON']);
+      if (!isFinite(lat) || !isFinite(lng)) return;
+      const { cleanNum, cleanStreet } = stripUnitInfo(
+        (row['#'] || '').trim(), (row['STREET'] || '').trim()
+      );
+      const city = (row['City'] || '').trim();
+      const mapAddress = (row['Map Address'] || '').trim();
+      const key = mapAddress
+        ? mapAddress.trim().toLowerCase()
+        : `${cleanNum} ${cleanStreet},${city}`.trim().toLowerCase();
+      if (!geoCache[key]) { geoCache[key] = { lat, lng }; cacheUpdated = true; }
+    });
+    if (cacheUpdated) saveGeoCache(geoCache);
+
     if (rates) {
       const issuedDate = new Date().toLocaleDateString('en-CA');
       const hasBundle = records.some(r => (r['Bundle'] || '').trim() !== '');
@@ -2350,28 +2294,24 @@
     if (!pendingDelete) return;
     const key = pendingDelete.key;
 
-    // Archive rows before removing (use reference equality — bundle.rows are direct references into allRecords)
-    const removedRows = pendingDelete.rows;
-    const removedSet = new Set(removedRows);
+    // Archive rows before removing
+    const removedRows = allRecords.filter(r =>
+      ((r['Bundle'] || r['City'] || '').trim() || 'Unknown') === key
+    );
     deletedBundles.push({ key, bundleName: pendingDelete.bundleName, rows: removedRows, deletedAt: Date.now() });
     saveDeletedBundles();
 
-    allRecords = allRecords.filter(r => !removedSet.has(r));
-    geocodedPoints = geocodedPoints.filter(p => !removedSet.has(p.row));
-    geocodeFailures = geocodeFailures.filter(f => !removedSet.has(f.row));
+    allRecords = allRecords.filter(r =>
+      ((r['Bundle'] || r['City'] || '').trim() || 'Unknown') !== key
+    );
     sentBundles.delete(key);
     bundles = groupIntoBundles(allRecords);
     saveRecordsBackup();
     saveSentState();
-    const deletedName = pendingDelete.bundleName;
+    renderHome();
+    updateRecoverBar();
+    showToast(`Bundle "${pendingDelete.bundleName}" deleted`);
     pendingDelete = null;
-    if (navigator.onLine) {
-      refreshApp();
-    } else {
-      renderHome();
-      updateRecoverBar();
-      showToast(`Bundle "${deletedName}" deleted`);
-    }
   });
 
   // ─── Recover Deleted Bundles ──────────────────────
@@ -2514,28 +2454,21 @@
 
   function getNewBundleKeys(records) {
     const hasBundle = records.some(r => (r['Bundle'] || '').trim() !== '');
-    const getKey = (r) => {
-      const base = hasBundle
-        ? ((r['Bundle'] || '').trim() || (r['City'] || '').trim() || 'Unknown')
-        : ((r['City'] || '').trim() || 'Unknown');
-      const cycle = String((r['MRU id'] || '').trim()).padStart(6, '0').substring(0, 2);
-      return cycle !== '00' ? `${base}|${cycle}` : base;
-    };
-    return [...new Set(records.map(getKey))];
+    return [...new Set(records.map(r => hasBundle
+      ? ((r['Bundle'] || '').trim() || (r['City'] || '').trim() || 'Unknown')
+      : ((r['City'] || '').trim() || 'Unknown')
+    ))];
   }
 
   function groupRecordsByBundleKey(records) {
     const hasBundle = records.some(r => (r['Bundle'] || '').trim() !== '');
-    const getKey = (r) => {
-      const base = hasBundle
-        ? ((r['Bundle'] || '').trim() || (r['City'] || '').trim() || 'Unknown')
-        : ((r['City'] || '').trim() || 'Unknown');
-      const cycle = String((r['MRU id'] || '').trim()).padStart(6, '0').substring(0, 2);
-      return cycle !== '00' ? `${base}|${cycle}` : base;
-    };
     return getNewBundleKeys(records).map(key => ({
       key,
-      records: records.filter(r => getKey(r) === key),
+      records: records.filter(r =>
+        (hasBundle
+          ? ((r['Bundle'] || '').trim() || (r['City'] || '').trim() || 'Unknown')
+          : ((r['City'] || '').trim() || 'Unknown')) === key
+      ),
     }));
   }
 
@@ -2551,7 +2484,7 @@
       const reader = new FileReader();
       reader.onload = (ev) => {
         const records = parseCSV(ev.target.result);
-        if (records.length && Object.hasOwn(records[0], 'MRU id')) {
+        if (records.length && records[0].hasOwnProperty('MRU id')) {
           validRecordSets.push(records);
         } else {
           skipped++;
@@ -2571,12 +2504,12 @@
         const dupKeys = getNewBundleKeys(incoming).filter(k => existingKeys.has(k));
 
         if (dupKeys.length) {
-          const names = dupKeys.map(k => k.includes('|') ? k.split('|')[0] : k).join(', ');
+          const names = dupKeys.join(', ');
           dupDesc.textContent = `The bundle${dupKeys.length > 1 ? 's' : ''} "${names}" ${dupKeys.length > 1 ? 'have' : 'has'} already been loaded. Loading it again would double the cards.`;
           dupModal.classList.remove('hidden');
         } else {
           const first = incoming[0];
-          if (Object.hasOwn(first, 'RATE_3EST') && Object.hasOwn(first, 'RATE_46EST') && Object.hasOwn(first, 'RATE_7PEST')) {
+          if (first.hasOwnProperty('RATE_3EST') && first.hasOwnProperty('RATE_46EST') && first.hasOwnProperty('RATE_7PEST')) {
             groupRecordsByBundleKey(incoming).forEach(({ records }) => {
               const r = records[0];
               commitLoad(records, {
@@ -3113,20 +3046,6 @@
 
   let restored = false;
 
-  async function refreshApp() {
-    if (!navigator.onLine) {
-      showToast('No internet connection — connect to Wi-Fi or data first, then try again.', true);
-      return;
-    }
-    try {
-      const keys = await caches.keys();
-      await Promise.all(keys.filter(k => k !== 'map-tiles-v1').map(k => caches.delete(k)));
-      const reg = await navigator.serviceWorker.getRegistration();
-      if (reg) await reg.unregister();
-    } catch (_) { }
-    window.location.reload();
-  }
-
   function boot() {
     bundleRates = loadBundleRates();
     loadSentState();
@@ -3154,9 +3073,20 @@
       }
     });
 
-    document.getElementById('home-clear-cache-btn').addEventListener('click', () => {
-      if (!confirm('Clear cached app files and reload?\n\nYour reading data will not be affected. Downloaded map tiles will be kept.')) return;
-      refreshApp();
+    // Refresh app button — clears app shell cache, keeps map tiles, reloads
+    document.getElementById('refresh-app-btn').addEventListener('click', async () => {
+      showToast('Clearing cache…');
+      try {
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.filter(k => k !== 'map-tiles-v1').map(k => caches.delete(k)));
+        }
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map(r => r.unregister()));
+        }
+      } catch (_) { }
+      window.location.reload();
     });
 
     // Register service worker

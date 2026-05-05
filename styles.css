@@ -80,8 +80,6 @@ html, body {
   background: var(--bg);
 }
 
-.hidden { display: none !important; }
-
 .view.hidden {
   display: none !important;
 }
@@ -801,33 +799,6 @@ html, body {
 
 .recover-item-btn:hover { opacity: 0.85; }
 
-/* Phone number modal */
-.phone-modal-number {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  margin: 6px 0;
-  background: #eff6ff;
-  border: 1.5px solid #bfdbfe;
-  border-radius: 10px;
-  color: #1d4ed8;
-  font-size: 1rem;
-  font-weight: 600;
-  text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
-}
-.phone-modal-number:hover { background: #dbeafe; }
-.phone-modal-number span { display: flex; flex-direction: column; }
-.phone-modal-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #6b7280;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  margin-bottom: 1px;
-}
-
 /* Send button inside card */
 .bundle-send-btn {
   margin-top: 12px;
@@ -870,9 +841,9 @@ html, body {
   height: var(--bottom-nav-height);
   background: var(--nav-bg);
   display: flex;
-  justify-content: center;
+  justify-content: space-around;
   align-items: center;
-  padding: 0 32px;
+  padding: 0 16px;
   border-top: 1px solid rgba(255,255,255,0.08);
   z-index: 100;
 }
@@ -1230,45 +1201,6 @@ html, body {
 }
 .bd-route-select.hidden { display: none; }
 
-/* Sort bar */
-.bd-sort-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  background: var(--bg);
-  border-bottom: 1px solid var(--divider);
-  flex-shrink: 0;
-}
-
-.bd-sort-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-light);
-  white-space: nowrap;
-}
-
-.bd-sort-btn {
-  padding: 4px 14px;
-  border-radius: 20px;
-  border: 1.5px solid var(--divider);
-  background: var(--white);
-  color: var(--text-medium);
-  font-size: 0.82rem;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
-  -webkit-tap-highlight-color: transparent;
-  white-space: nowrap;
-}
-
-.bd-sort-btn.active {
-  background: #0891b2;
-  color: #fff;
-  border-color: #0891b2;
-}
-
 .bd-no-results {
   text-align: center;
   padding: 32px 16px;
@@ -1276,6 +1208,66 @@ html, body {
   font-size: 0.9rem;
   font-weight: 500;
 }
+
+/* ─── Sort Bar ───────────────────────────────────── */
+.bd-sort-bar {
+  display: flex;
+  gap: 7px;
+  padding: 6px 14px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--divider);
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.bd-sort-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+  margin-right: 2px;
+}
+
+.bd-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1.5px solid var(--divider);
+  background: var(--white);
+  color: var(--text-medium);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bd-sort-btn.active {
+  background: #0f4c8a;
+  color: #fff;
+  border-color: #0f4c8a;
+}
+
+.bd-sort-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 50%;
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.bd-sort-badge.hidden { display: none; }
 
 /* ─── Address List ───────────────────────────────── */
 .address-list {
@@ -1981,30 +1973,16 @@ html, body {
 
 /* ─── Map View ───────────────────────────────────── */
 
-/* Three-tab bottom navs */
-#view-home   .bottom-nav,
-#view-map    .bottom-nav,
-#view-bundle .bottom-nav {
+/* Consistent 3-tab bottom nav across all views */
+.bottom-nav {
   justify-content: space-around;
 }
 
-/* Card view bottom nav — prev/next at corners */
-#view-card .bottom-nav {
-  justify-content: space-between;
-}
-
-.bd-nav-spacer {
-  width: 48px;
-  height: 48px;
-  flex-shrink: 0;
-}
-
-#view-card #card-prev-btn,
-#view-card #card-next-btn {
-  width: 48px;
-  height: 48px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 10px;
+/* Card header prev/next + position wrap */
+.card-nav-center-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* Map container: fills all remaining flex space */
@@ -2015,7 +1993,7 @@ html, body {
 }
 
 #map-container.leaflet-container {
-  background: #e8eef0;
+  background: #f2f1ec;
 }
 
 /* Bundle filter bar */
@@ -2047,6 +2025,24 @@ html, body {
 
 .map-regeocode-btn:hover {
   background: rgba(255,255,255,0.2);
+  color: #fff;
+}
+
+.map-download-size-select {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.85);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 5px 8px;
+  outline: none;
+  cursor: pointer;
+}
+
+.map-download-size-select option {
+  background: #1a2438;
   color: #fff;
 }
 
@@ -2270,7 +2266,7 @@ html, body {
 .totals-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 16px 16px calc(var(--bottom-nav-height) + 16px);
   background: var(--bg);
 }
 

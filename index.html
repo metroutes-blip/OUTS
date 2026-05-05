@@ -67,16 +67,24 @@
           <h1 class="home-title">Meter Reader</h1>
           <p class="home-reader-name" id="home-reader-name">Field Reader</p>
         </div>
-        <label class="reload-btn" for="csv-file-input" title="Load new CSV">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="17 8 12 3 7 8"/>
-            <line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-        </label>
-        <input type="file" id="csv-file-input" accept=".csv" multiple hidden>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <label class="reload-btn" for="csv-file-input" title="Load new CSV">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </label>
+          <input type="file" id="csv-file-input" accept=".csv" multiple hidden>
+          <button class="reload-btn" id="refresh-app-btn" title="Refresh app (clears cached files)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polyline points="1 4 1 10 7 10"/>
+              <path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
+            </svg>
+          </button>
+        </div>
       </div>
-      <div style="text-align:center; padding: 6px 0 2px; display:flex; justify-content:center; gap:20px;">
+      <div style="text-align:center; padding: 6px 0 2px;">
         <a href="guide.html" target="_blank" style="display:inline-flex; align-items:center; gap:7px; color:#f59e0b; font-size:0.82rem; font-weight:600; text-decoration:none; letter-spacing:0.04em; opacity:0.85;">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"/>
@@ -86,13 +94,6 @@
           </svg>
           User Guide
         </a>
-        <button id="home-clear-cache-btn" style="display:inline-flex; align-items:center; gap:7px; color:#94a3b8; font-size:0.82rem; font-weight:600; background:none; border:none; cursor:pointer; letter-spacing:0.04em; font-family:inherit; padding:0; opacity:0.85; -webkit-tap-highlight-color:transparent;">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <polyline points="1 4 1 10 7 10"/>
-            <path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
-          </svg>
-          Refresh App
-        </button>
       </div>
     </div>
 
@@ -170,8 +171,12 @@
       </div>
       <div class="bottom-nav-item" id="home-nav-list">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-          <circle cx="3" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="18" r="1" fill="currentColor" stroke="none"/>
+          <line x1="8" y1="6" x2="21" y2="6"/>
+          <line x1="8" y1="12" x2="21" y2="12"/>
+          <line x1="8" y1="18" x2="21" y2="18"/>
+          <line x1="3" y1="6" x2="3.01" y2="6"/>
+          <line x1="3" y1="12" x2="3.01" y2="12"/>
+          <line x1="3" y1="18" x2="3.01" y2="18"/>
         </svg>
         <span>List</span>
       </div>
@@ -288,11 +293,9 @@
     <!-- Sort bar -->
     <div class="bd-sort-bar">
       <span class="bd-sort-label">Sort:</span>
-      <button class="bd-sort-btn" id="bd-sort-name-btn">Street</button>
-      <button class="bd-sort-btn" id="bd-sort-num-btn">No.</button>
-      <button class="bd-sort-btn" id="bd-sort-mru-btn">MRU</button>
-      <button class="bd-sort-btn" id="bd-sort-order-btn">Read Order</button>
-      <button class="bd-sort-btn" id="bd-sort-seq-btn">SEQ</button>
+      <button class="bd-sort-btn" id="bd-sort-mru">MRU<span class="bd-sort-badge hidden" id="bd-sort-mru-badge"></span></button>
+      <button class="bd-sort-btn" id="bd-sort-readorder">Read Order<span class="bd-sort-badge hidden" id="bd-sort-readorder-badge"></span></button>
+      <button class="bd-sort-btn" id="bd-sort-seq">Seq<span class="bd-sort-badge hidden" id="bd-sort-seq-badge"></span></button>
     </div>
 
     <!-- Pick-start banner -->
@@ -317,8 +320,12 @@
       </div>
       <div class="bottom-nav-item active" id="bd-nav-list">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-          <circle cx="3" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="18" r="1" fill="currentColor" stroke="none"/>
+          <line x1="8" y1="6" x2="21" y2="6"/>
+          <line x1="8" y1="12" x2="21" y2="12"/>
+          <line x1="8" y1="18" x2="21" y2="18"/>
+          <line x1="3" y1="6" x2="3.01" y2="6"/>
+          <line x1="3" y1="12" x2="3.01" y2="12"/>
+          <line x1="3" y1="18" x2="3.01" y2="18"/>
         </svg>
         <span>List</span>
       </div>
@@ -353,10 +360,22 @@
           </svg>
           <span id="card-back-label">List</span>
         </button>
-        <div class="card-nav-center">
+        <div class="card-nav-center-wrap">
+          <button class="card-dt-nav-btn" id="card-prev-btn" title="Previous record">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
+          <div class="card-nav-center">
             <span class="card-dt-nav-pos" id="card-nav-pos"></span>
             <span class="card-nav-complete" id="card-nav-complete"></span>
           </div>
+          <button class="card-dt-nav-btn" id="card-next-btn" title="Next record">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+        </div>
         <button class="card-dt-menu-btn" id="card-menu-btn" title="Options">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="3" y1="6" x2="21" y2="6"/>
@@ -405,12 +424,6 @@
             <polyline points="10 9 9 9 8 9"/>
           </svg>
           <span>Report</span>
-        </button>
-        <button class="card-dt-menu-item" id="card-menu-phone">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6 6l.86-.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-          </svg>
-          <span>Phone #</span>
         </button>
         <button class="card-dt-menu-item hidden" id="card-menu-delete-reading">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -529,11 +542,6 @@
 
     <!-- Bottom nav -->
     <nav class="bottom-nav">
-      <button class="card-dt-nav-btn" id="card-prev-btn" title="Previous record">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <polyline points="15 18 9 12 15 6"/>
-        </svg>
-      </button>
       <div class="bottom-nav-item" id="card-nav-bundles">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
           <rect x="3" y="3" width="7" height="7" rx="1"/>
@@ -545,8 +553,12 @@
       </div>
       <div class="bottom-nav-item active" id="card-nav-list">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-          <circle cx="3" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="18" r="1" fill="currentColor" stroke="none"/>
+          <line x1="8" y1="6" x2="21" y2="6"/>
+          <line x1="8" y1="12" x2="21" y2="12"/>
+          <line x1="8" y1="18" x2="21" y2="18"/>
+          <line x1="3" y1="6" x2="3.01" y2="6"/>
+          <line x1="3" y1="12" x2="3.01" y2="12"/>
+          <line x1="3" y1="18" x2="3.01" y2="18"/>
         </svg>
         <span>List</span>
       </div>
@@ -558,11 +570,6 @@
         </svg>
         <span>Map</span>
       </div>
-      <button class="card-dt-nav-btn" id="card-next-btn" title="Next record">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <polyline points="9 18 15 12 9 6"/>
-        </svg>
-      </button>
     </nav>
   </div>
 
@@ -596,6 +603,11 @@
         </svg>
         Re-geocode
       </button>
+      <select id="map-download-size" class="map-download-size-select" title="Download area size">
+        <option value="14">Neighbourhood</option>
+        <option value="12" selected>Town</option>
+        <option value="10">City</option>
+      </select>
       <button class="map-regeocode-btn" id="map-download-btn" title="Download map tiles for offline use">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -651,8 +663,12 @@
       </div>
       <div class="bottom-nav-item" id="map-nav-list">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-          <circle cx="3" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="18" r="1" fill="currentColor" stroke="none"/>
+          <line x1="8" y1="6" x2="21" y2="6"/>
+          <line x1="8" y1="12" x2="21" y2="12"/>
+          <line x1="8" y1="18" x2="21" y2="18"/>
+          <line x1="3" y1="6" x2="3.01" y2="6"/>
+          <line x1="3" y1="12" x2="3.01" y2="12"/>
+          <line x1="3" y1="18" x2="3.01" y2="18"/>
         </svg>
         <span>List</span>
       </div>
@@ -698,6 +714,38 @@
         <!-- populated by showTotalsView() -->
       </div>
     </div>
+
+    <!-- Bottom nav -->
+    <nav class="bottom-nav">
+      <div class="bottom-nav-item" id="totals-nav-bundles">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        <span>Bundles</span>
+      </div>
+      <div class="bottom-nav-item active" id="totals-nav-list">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <line x1="8" y1="6" x2="21" y2="6"/>
+          <line x1="8" y1="12" x2="21" y2="12"/>
+          <line x1="8" y1="18" x2="21" y2="18"/>
+          <line x1="3" y1="6" x2="3.01" y2="6"/>
+          <line x1="3" y1="12" x2="3.01" y2="12"/>
+          <line x1="3" y1="18" x2="3.01" y2="18"/>
+        </svg>
+        <span>List</span>
+      </div>
+      <div class="bottom-nav-item" id="totals-nav-map">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+          <line x1="8" y1="2" x2="8" y2="18"/>
+          <line x1="16" y1="6" x2="16" y2="22"/>
+        </svg>
+        <span>Map</span>
+      </div>
+    </nav>
 
   </div>
 
@@ -901,37 +949,6 @@
   <div class="update-banner hidden" id="update-banner">
     <span>&#8593; App updated — tap to reload</span>
     <button class="update-banner-btn" id="update-banner-btn">Reload</button>
-  </div>
-
-  <!-- Phone Number Modal -->
-  <div id="phone-modal" class="modal-overlay hidden">
-    <div class="modal-sheet">
-      <div class="modal-icon" style="background:#eff6ff;color:#2563eb;">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6 6l.86-.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-        </svg>
-      </div>
-      <h2 class="modal-title">Phone Number</h2>
-      <!-- PIN entry -->
-      <div id="phone-pin-section">
-        <p class="modal-desc">Enter PIN to view contact number.</p>
-        <input type="password" id="phone-pin-input" class="modal-input"
-               inputmode="numeric" pattern="[0-9]*" maxlength="10"
-               placeholder="Enter PIN" autocomplete="off">
-        <p id="phone-pin-error" class="pin-error hidden">Incorrect PIN — try again.</p>
-        <div class="modal-actions">
-          <button class="modal-cancel" id="phone-modal-cancel">Cancel</button>
-          <button class="modal-confirm" id="phone-pin-confirm">View</button>
-        </div>
-      </div>
-      <!-- Numbers (revealed after correct PIN) -->
-      <div id="phone-numbers-section" class="hidden">
-        <div id="phone-modal-numbers"></div>
-        <div class="modal-actions">
-          <button class="modal-cancel" id="phone-modal-close">Close</button>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- Toast -->
