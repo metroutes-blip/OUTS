@@ -433,6 +433,12 @@
           </svg>
           <span>Delete Reading</span>
         </button>
+        <button class="card-dt-menu-item" id="card-menu-phone">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6.49 6.49l.97-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+          <span>View Phone Number</span>
+        </button>
       </div>
       <div class="card-dt-seq" id="card-dt-seq"></div>
       <h1 class="card-dt-address" id="card-dt-address"></h1>
@@ -1005,6 +1011,38 @@
       <p id="due-warning-desc" class="modal-desc"></p>
       <div class="modal-actions">
         <button class="modal-cancel" id="due-warning-ok">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phone Number Modal -->
+  <div id="phone-modal" class="modal-overlay hidden">
+    <div class="modal-sheet">
+      <div class="modal-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6.49 6.49l.97-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg>
+      </div>
+      <!-- PIN entry phase -->
+      <div id="phone-modal-pin-phase">
+        <h2 class="modal-title">View Phone Number</h2>
+        <p class="modal-desc">Enter your PIN to view the contact number.</p>
+        <input type="password" id="phone-modal-pin" class="modal-input"
+               inputmode="numeric" pattern="[0-9]*" maxlength="10"
+               placeholder="Enter PIN" autocomplete="off">
+        <p id="phone-modal-error" class="pin-error hidden">Incorrect PIN — try again.</p>
+        <div class="modal-actions">
+          <button class="modal-cancel" id="phone-modal-cancel">Cancel</button>
+          <button class="modal-confirm" id="phone-modal-confirm">View</button>
+        </div>
+      </div>
+      <!-- Phone display phase -->
+      <div id="phone-modal-number-phase" class="hidden">
+        <h2 class="modal-title">Phone Number</h2>
+        <div id="phone-modal-numbers" class="phone-modal-numbers"></div>
+        <div class="modal-actions" style="margin-top:16px;">
+          <button class="modal-confirm" id="phone-modal-done">Done</button>
+        </div>
       </div>
     </div>
   </div>

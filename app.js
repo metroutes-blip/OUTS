@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v9.0';
+  const APP_VERSION = 'v9.1';
 
   // ─── State ────────────────────────────────────────
   let allRecords = [];         // all CSV rows
@@ -239,6 +239,69 @@
     closeCardMenu();
     document.getElementById('del-reading-modal').classList.remove('hidden');
   });
+
+  // ─── Phone Number Modal ───────────────────────────
+  const phoneModal = document.getElementById('phone-modal');
+  const phoneModalPinPhase = document.getElementById('phone-modal-pin-phase');
+  const phoneModalNumberPhase = document.getElementById('phone-modal-number-phase');
+  const phoneModalPin = document.getElementById('phone-modal-pin');
+  const phoneModalError = document.getElementById('phone-modal-error');
+  const phoneModalNumbers = document.getElementById('phone-modal-numbers');
+
+  function openPhoneModal() {
+    phoneModalPinPhase.classList.remove('hidden');
+    phoneModalNumberPhase.classList.add('hidden');
+    phoneModalPin.value = '';
+    phoneModalError.classList.add('hidden');
+    phoneModal.classList.remove('hidden');
+    setTimeout(() => phoneModalPin.focus(), 80);
+  }
+
+  function closePhoneModal() {
+    phoneModal.classList.add('hidden');
+    phoneModalPin.value = '';
+    phoneModalError.classList.add('hidden');
+  }
+
+  function formatPhone(raw) {
+    const digits = raw.replace(/\D/g, '');
+    if (digits.length === 10) return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+    return raw;
+  }
+
+  function tryPhonePin() {
+    if (phoneModalPin.value === APP_PIN) {
+      const res = (currentRow['Res #'] || '').toString().trim();
+      const comm = (currentRow['Comm #'] || '').toString().trim();
+      phoneModalNumbers.innerHTML = '';
+      if (!res && !comm) {
+        phoneModalNumbers.innerHTML = '<p class="phone-modal-none">No phone number on file.</p>';
+      } else {
+        if (res) {
+          phoneModalNumbers.innerHTML += `<div class="phone-modal-row"><span class="phone-modal-label">Residential</span><span class="phone-modal-number">${formatPhone(res)}</span></div>`;
+        }
+        if (comm) {
+          phoneModalNumbers.innerHTML += `<div class="phone-modal-row"><span class="phone-modal-label">Commercial</span><span class="phone-modal-number">${formatPhone(comm)}</span></div>`;
+        }
+      }
+      phoneModalPinPhase.classList.add('hidden');
+      phoneModalNumberPhase.classList.remove('hidden');
+    } else {
+      phoneModalError.classList.remove('hidden');
+      phoneModalPin.value = '';
+      phoneModalPin.focus();
+    }
+  }
+
+  document.getElementById('card-menu-phone').addEventListener('click', () => {
+    closeCardMenu();
+    openPhoneModal();
+  });
+
+  document.getElementById('phone-modal-confirm').addEventListener('click', tryPhonePin);
+  phoneModalPin.addEventListener('keydown', e => { if (e.key === 'Enter') tryPhonePin(); });
+  document.getElementById('phone-modal-cancel').addEventListener('click', closePhoneModal);
+  document.getElementById('phone-modal-done').addEventListener('click', closePhoneModal);
 
   document.getElementById('del-reading-cancel').addEventListener('click', () => {
     document.getElementById('del-reading-modal').classList.add('hidden');

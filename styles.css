@@ -1971,6 +1971,45 @@ html, body {
   background: #b91c1c;
 }
 
+.phone-modal-numbers {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.phone-modal-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.phone-modal-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.phone-modal-number {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+
+.phone-modal-none {
+  font-size: 0.95rem;
+  color: var(--text-light);
+  text-align: center;
+  padding: 12px 0;
+}
+
+#phone-modal-pin-phase.hidden { display: none; }
+#phone-modal-number-phase.hidden { display: none; }
+.pin-error.hidden { display: none; }
+
 /* ─── Map View ───────────────────────────────────── */
 
 /* Consistent 3-tab bottom nav across all views */
