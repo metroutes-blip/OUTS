@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v9.1';
+  const APP_VERSION = 'v9.2';
 
   // ─── State ────────────────────────────────────────
   let allRecords = [];         // all CSV rows
@@ -3137,7 +3137,18 @@
     });
 
     // Refresh app button — clears app shell cache, keeps map tiles, reloads
-    document.getElementById('refresh-app-btn').addEventListener('click', async () => {
+    const refreshAppBtn = document.getElementById('refresh-app-btn');
+
+    function updateRefreshBtnState() {
+      refreshAppBtn.disabled = !navigator.onLine;
+      refreshAppBtn.title = navigator.onLine ? 'Refresh app (clears cached files)' : 'Unavailable offline';
+    }
+    updateRefreshBtnState();
+    window.addEventListener('online', updateRefreshBtnState);
+    window.addEventListener('offline', updateRefreshBtnState);
+
+    refreshAppBtn.addEventListener('click', async () => {
+      if (!navigator.onLine) return;
       showToast('Clearing cache…');
       try {
         if ('caches' in window) {
