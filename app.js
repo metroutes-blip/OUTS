@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v9.2';
+  const APP_VERSION = 'v9.0';
 
   // ─── State ────────────────────────────────────────
   let allRecords = [];         // all CSV rows
@@ -555,19 +555,23 @@
       visited[best] = true;
     }
 
-    // 2-opt improvement
+    // 2-opt improvement — threshold scaled to distance unit (seconds vs metres)
+    const twoOptThresh = usedRoads ? 1.0 : 10.0;
     let improved = true;
     while (improved) {
       improved = false;
+      await new Promise(r => setTimeout(r, 0)); // yield so UI stays responsive
+      swap:
       for (let i = 1; i < order.length - 1; i++) {
         for (let j = i + 1; j < order.length; j++) {
           const a = order[i - 1], b = order[i], c = order[j];
           const d = j + 1 < order.length ? order[j + 1] : -1;
           const distBefore = dist(a, b) + (d >= 0 ? dist(c, d) : 0);
           const distAfter = dist(a, c) + (d >= 0 ? dist(b, d) : 0);
-          if (distAfter < distBefore - 0.1) {
+          if (distAfter < distBefore - twoOptThresh) {
             order.splice(i, j - i + 1, ...order.slice(i, j + 1).reverse());
             improved = true;
+            break swap; // restart from scratch after each swap
           }
         }
       }
@@ -597,22 +601,33 @@
       originalRowsOrder = rows.slice();
     }
 
-    // Show loading state while OSRM is queried
     const optimizeBtn = document.getElementById('bd-optimize-btn');
     optimizeBtn.textContent = 'Optimizing...';
     optimizeBtn.disabled = true;
 
-    const { ordered, usedRoads } = await computeOptimizedOrder(rows, startRow);
-    ordered.forEach((r, i) => { r['READ_ORDER'] = i + 1; });
-    bundle.rows = ordered;
-    routeOptimized = true;
+    try {
+      const { ordered, usedRoads } = await computeOptimizedOrder(rows, startRow);
+      ordered.forEach((r, i) => { r['READ_ORDER'] = i + 1; });
+      bundle.rows = ordered;
+      routeOptimized = true;
 
-    optimizeBtn.textContent = 'Optimize Route';
-    optimizeBtn.disabled = false;
+      const sortWasActive = bdSortOrder.length > 0;
+      if (sortWasActive) {
+        bdSortOrder = [];
+        updateSortBadges();
+      }
 
-    document.getElementById('bd-reset-order-btn').classList.remove('hidden');
-    showBundleDetail(bundle, true);
-    showToast(usedRoads ? 'Route optimized using road distances.' : (navigator.onLine ? 'Road routing unavailable — used straight-line distances. Check console for details.' : 'Offline — route optimized using straight-line distances.'));
+      document.getElementById('bd-reset-order-btn').classList.remove('hidden');
+      showBundleDetail(bundle, true);
+      const baseMsg = usedRoads ? 'Route optimized using road distances.' : (navigator.onLine ? 'Optimized using straight-line distances.' : 'Offline — optimized using straight-line distances.');
+      showToast(baseMsg + (sortWasActive ? ' Sort cleared.' : ''));
+    } catch (err) {
+      console.error('Optimization failed:', err);
+      showToast('Optimization failed — please try again.', true);
+    } finally {
+      optimizeBtn.textContent = 'Optimize Route';
+      optimizeBtn.disabled = false;
+    }
   }
 
   function resetRouteOrder() {
