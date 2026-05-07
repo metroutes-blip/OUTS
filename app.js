@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v9.0';
+  const APP_VERSION = 'v9.1';
 
   // ─── State ────────────────────────────────────────
   let allRecords = [];         // all CSV rows
@@ -1512,7 +1512,8 @@
       const est3Read = est3Rows.filter(isRead).length;
       const est46Read = est46Rows.filter(isRead).length;
       const est7plusRead = est7plusRows.filter(isRead).length;
-      return { key, bundleName: key, mruIds, routeNums, mruCycle, mruArea, bundleId, rows, city, total, read, est3, est46, est7plus, est3Read, est46Read, est7plusRead };
+      const bundleName = rows[0]['__filename'] || key;
+      return { key, bundleName, mruIds, routeNums, mruCycle, mruArea, bundleId, rows, city, total, read, est3, est46, est7plus, est3Read, est46Read, est7plusRead };
     });
   }
 
@@ -2560,9 +2561,11 @@
 
     files.forEach(file => {
       const reader = new FileReader();
+      const fileName = file.name.replace(/\.csv$/i, '');
       reader.onload = (ev) => {
         const records = parseCSV(ev.target.result);
         if (records.length && records[0].hasOwnProperty('MRU id')) {
+          records.forEach(r => { r['__filename'] = fileName; });
           validRecordSets.push(records);
         } else {
           skipped++;
