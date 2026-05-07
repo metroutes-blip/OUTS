@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v9.2';
+  const APP_VERSION = 'v9.1';
 
   // ─── State ────────────────────────────────────────
   let allRecords = [];         // all CSV rows
@@ -190,7 +190,13 @@
   }
 
   function setReadingLocked(locked) {
-    cardDtReading.readOnly = locked;
+    if (locked) {
+      cardDtReading.setAttribute('readonly', '');
+      cardDtReading.setAttribute('inputmode', 'none');
+    } else {
+      cardDtReading.removeAttribute('readonly');
+      cardDtReading.setAttribute('inputmode', 'numeric');
+    }
     cardDtReading.classList.toggle('reading-locked', locked);
   }
 
