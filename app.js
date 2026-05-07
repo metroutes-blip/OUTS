@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v9.1';
+  const APP_VERSION = 'v9.2';
 
   // ─── State ────────────────────────────────────────
   let allRecords = [];         // all CSV rows
