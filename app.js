@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v9.1';
+  const APP_VERSION = 'v9.3';
 
   // ─── State ────────────────────────────────────────
   let allRecords = [];         // all CSV rows
@@ -1050,9 +1050,8 @@
       return;
     }
     leafletMap = L.map('map-container', { zoomControl: true });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: ['a', 'b', 'c', 'd'],
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19
     }).addTo(leafletMap);
 
@@ -3177,7 +3176,7 @@
       try {
         if ('caches' in window) {
           const keys = await caches.keys();
-          await Promise.all(keys.filter(k => k !== 'map-tiles-v1').map(k => caches.delete(k)));
+          await Promise.all(keys.filter(k => k !== 'map-tiles-v2').map(k => caches.delete(k)));
         }
         if ('serviceWorker' in navigator) {
           const regs = await navigator.serviceWorker.getRegistrations();

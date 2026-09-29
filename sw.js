@@ -3,8 +3,8 @@
    Enables offline use after first load
    ================================================ */
 
-const CACHE_NAME = 'meter-reader-v9.1';
-const TILE_CACHE = 'map-tiles-v1';  // kept across app updates
+const CACHE_NAME = 'meter-reader-v9.3';
+const TILE_CACHE = 'map-tiles-v2';  // kept across app updates
 
 const CACHE_FILES = [
   './',
@@ -41,7 +41,7 @@ self.addEventListener('fetch', (e) => {
   const url = e.request.url;
 
   // Map tiles — network first, cache on success, fall back to cache when offline
-  if (url.includes('basemaps.cartocdn.com')) {
+  if (url.includes('tile.openstreetmap.org')) {
     e.respondWith(
       fetch(e.request)
         .then(response => {

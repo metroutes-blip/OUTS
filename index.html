@@ -609,12 +609,13 @@
         </svg>
         Re-geocode
       </button>
-      <select id="map-download-size" class="map-download-size-select" title="Download area size">
+      <!-- Download hidden: OSM tile policy forbids bulk downloads. Viewed tiles are still cached by sw.js. -->
+      <select id="map-download-size" class="map-download-size-select" title="Download area size" style="display:none">
         <option value="14">Neighbourhood</option>
         <option value="12" selected>Town</option>
         <option value="10">City</option>
       </select>
-      <button class="map-regeocode-btn" id="map-download-btn" title="Download map tiles for offline use">
+      <button class="map-regeocode-btn" id="map-download-btn" title="Download map tiles for offline use" style="display:none">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="7 10 12 15 17 10"/>
