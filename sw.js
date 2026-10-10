@@ -3,7 +3,7 @@
    Enables offline use after first load
    ================================================ */
 
-const CACHE_NAME = 'meter-reader-v9.3';
+const CACHE_NAME = 'meter-reader-v9.4';
 const TILE_CACHE = 'map-tiles-v2';  // kept across app updates
 
 const CACHE_FILES = [
@@ -29,7 +29,10 @@ self.addEventListener('activate', (e) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter(k => k !== CACHE_NAME && k !== TILE_CACHE)
+          // Only this app's own old caches: other apps on metroutes-blip.github.io
+          // (LVB / meter-read-entry) share this cache store.
+          .filter(k => (k.startsWith('meter-reader-') && k !== CACHE_NAME) ||
+                       (k.startsWith('map-tiles-') && k !== TILE_CACHE))
           .map(k => caches.delete(k))
       )
     )
