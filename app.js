@@ -8,6 +8,10 @@
 
   const APP_VERSION = 'v9.4';
 
+  // True inside the Android app (a Capacitor shell around these same files), false in a browser.
+  const NATIVE = !!window.androidBridge;
+  document.documentElement.classList.toggle('is-native', NATIVE);
+
   // ─── State ────────────────────────────────────────
   let allRecords = [];         // all CSV rows
   let bundles = [];            // grouped by bundle key
@@ -2721,6 +2725,93 @@
     return lines.join('\r\n');
   }
 
+  // ─── Android app: files go through the phone's own storage, mail app and share sheet ───
+  // A web view can't download, share or pick a folder, so the app's plugins do it.
+  const NATIVE_FOLDER = 'MeterReader'; // inside the phone's Documents
+
+  function nativeCall(plugin, method, options) {
+    const p = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins[plugin];
+    return p && p[method] ? p[method](options) : window.Capacitor.nativePromise(plugin, method, options);
+  }
+
+  function textToB64(text) {
+    const bytes = new TextEncoder().encode(text);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+  }
+
+  async function nativeWrite(file, directory, path) {
+    const data = textToB64(await file.text());
+    return (await nativeCall('Filesystem', 'writeFile', { path: path || file.name, data, directory, recursive: true })).uri;
+  }
+
+  async function nativeShare(files, title, text) {
+    const uris = [];
+    for (const f of files) uris.push(await nativeWrite(f, 'CACHE'));
+    await nativeCall('Share', 'share', { title, text, files: uris, dialogTitle: title });
+  }
+
+  // A new email in the phone's mail app with To, subject, body and the files already attached.
+  // If no mail app takes it, fall back to the share sheet (which can't fill in the addresses).
+  async function nativeEmail(files, to, subject, body) {
+    try {
+      const attachments = [];
+      for (const f of files) attachments.push({ type: 'base64', path: textToB64(await f.text()), name: f.name });
+      await nativeCall('EmailComposer', 'open', { to, subject, body, attachments });
+    } catch (err) {
+      console.warn('Could not open an email draft', err);
+      await nativeShare(files, subject, body);
+    }
+  }
+
+  // Save into Documents / MeterReader; if the phone won't allow that, offer the share sheet instead.
+  async function nativeSave(file, quiet) {
+    try {
+      await nativeWrite(file, 'DOCUMENTS', `${NATIVE_FOLDER}/${file.name}`);
+      if (!quiet) showToast(`Saved to Documents / ${NATIVE_FOLDER}: ${file.name}`);
+      return true;
+    } catch (err) {
+      console.warn('Could not save to Documents', err);
+      if (quiet) return false;
+      try { await nativeShare([file], file.name); return true; }
+      catch (e) { if (!/cancel/i.test(e.message || '')) showToast(`Could not save ${file.name}`, true); }
+      return false;
+    }
+  }
+
+  // Auto-backup in the app: no folder to pick, the day's backup is rewritten in Documents / MeterReader.
+  async function writeNativeBackup() {
+    if (!allRecords.length) return;
+    const csv = buildAllRecordsCSV();
+    if (!csv) return;
+    const dateStr = new Date().toLocaleDateString('en-CA');
+    const file = new File([csv], `meter-backup-${dateStr}.csv`, { type: 'text/csv' });
+    if (await nativeSave(file, true)) {
+      try { localStorage.setItem(BACKUP_DATE_KEY, dateStr); } catch (_) { }
+      const bar = bundleList.querySelector('.backup-bar:not(.backup-bar--active)');
+      if (bar) bar.remove();
+    } else {
+      try { localStorage.removeItem(AUTO_BACKUP_INDICATOR_KEY); } catch (_) { }
+      showToast('Auto-backup could not save — use Save Daily Backup', true);
+      backupBarShown = false;
+      updateBackupBarUI();
+    }
+  }
+
+  // The phone's Back button: same as the on-screen way back from the screen in front.
+  function nativeBack() {
+    if (document.querySelector('.modal-overlay:not(.hidden)')) return;
+    const view = document.querySelector('.view:not(.hidden)');
+    if (!view || view.id === 'view-home' || view.id === 'view-pin' || view.id === 'view-splash') {
+      nativeCall('App', 'minimizeApp', {}).catch(() => { });
+      return;
+    }
+    if (view.id === 'view-map') { document.getElementById('map-nav-bundles').click(); return; }
+    const back = view.querySelector('.back-btn');
+    if (back) back.click();
+  }
+
   // ─── Auto-backup: silent write to authorized folder ───
 
   async function writeCSVToFolder(handle) {
@@ -2747,6 +2838,12 @@
 
   function scheduleAutoSave() {
     clearTimeout(autoSaveTimer);
+    if (NATIVE) {
+      let on = false;
+      try { on = !!localStorage.getItem(AUTO_BACKUP_INDICATOR_KEY); } catch (_) { }
+      if (on) autoSaveTimer = setTimeout(writeNativeBackup, 2000);
+      return;
+    }
     autoSaveTimer = setTimeout(async () => {
       let handle;
       try { handle = await loadDirectoryHandle(); } catch (_) { return; }
@@ -2765,6 +2862,13 @@
   }
 
   async function chooseBackupFolder() {
+    if (NATIVE) {
+      try { localStorage.setItem(AUTO_BACKUP_INDICATOR_KEY, '1'); } catch (_) { }
+      showToast(`Auto-backup on — saves to Documents / ${NATIVE_FOLDER}`);
+      updateBackupBarUI();
+      await writeNativeBackup();
+      return;
+    }
     if (!window.showDirectoryPicker) {
       showToast('Auto-backup not supported in this browser');
       return;
@@ -2792,11 +2896,13 @@
     if (isAutoActive) {
       const bar = document.createElement('div');
       bar.className = 'backup-bar backup-bar--active';
-      bar.innerHTML = `
+      bar.innerHTML = NATIVE ? `
+        <span class="backup-active-dot"></span>
+        <span class="backup-active-label">Auto-backup active · Documents / ${NATIVE_FOLDER}</span>` : `
         <span class="backup-active-dot"></span>
         <span class="backup-active-label">Auto-backup active</span>
         <button class="backup-change-btn" title="Change backup folder">Change folder</button>`;
-      bar.querySelector('.backup-change-btn').addEventListener('click', chooseBackupFolder);
+      if (!NATIVE) bar.querySelector('.backup-change-btn').addEventListener('click', chooseBackupFolder);
       bundleList.prepend(bar);
       return;
     }
@@ -2834,6 +2940,15 @@
     const csv = buildAllRecordsCSV();
     if (!csv) return;
     const dateStr = new Date().toLocaleDateString('en-CA');
+    if (NATIVE) {
+      nativeSave(new File([csv], `meter-backup-${dateStr}.csv`, { type: 'text/csv' })).then(ok => {
+        if (!ok) return;
+        try { localStorage.setItem(BACKUP_DATE_KEY, dateStr); } catch (_) { }
+        const bar = bundleList.querySelector('.backup-bar');
+        if (bar) bar.remove();
+      });
+      return;
+    }
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     const a = document.createElement('a');
     a.href = url; a.download = `meter-backup-${dateStr}.csv`;
@@ -2856,7 +2971,7 @@
     // Show the Share button only when the browser supports file sharing
     const shareBtn = document.getElementById('email-provider-share');
     const testFile = new File([''], 'test.txt', { type: 'text/plain' });
-    shareBtn.classList.toggle('hidden', !(navigator.canShare && navigator.canShare({ files: [testFile] })));
+    shareBtn.classList.toggle('hidden', !NATIVE && !(navigator.canShare && navigator.canShare({ files: [testFile] })));
     emailProviderModal.classList.remove('hidden');
   }
 
@@ -2876,6 +2991,17 @@
     const reportFile = new File([reportText], `report_${safeName}_${dateStr}.txt`, { type: 'text/plain' });
     const subject = `Meter Reading — Bundle ${bundle.bundleName} — ${new Date().toLocaleDateString('en-US')}`;
     const recipients = 'rovana.adjodha@metutilities.com,Sue.Vaillancourt@metutilities.com,Brandon.Bain@metutilities.com,mike.borneman@metutilities.com';
+
+    if (NATIVE) {
+      // In the app the files go straight into the email (or the share sheet) as attachments.
+      const sent = provider === 'share'
+        ? nativeShare([csvFile, reportFile], subject, reportText)
+        : nativeEmail([csvFile, reportFile], recipients.split(','), subject, reportText);
+      sent.catch(err => {
+        if (!/cancel/i.test((err && err.message) || '')) showToast('Could not open the email — try Share', true);
+      });
+      return;
+    }
 
     if (provider === 'share') {
       navigator.share({ files: [csvFile, reportFile], title: subject, text: reportText }).catch(() => { });
@@ -3107,6 +3233,18 @@
   async function initAutoBackup() {
     if (!allRecords.length) { checkDailyBackup(); return; }
 
+    if (NATIVE) {
+      let on = false, doneToday = false;
+      const today = new Date().toLocaleDateString('en-CA');
+      try {
+        on = !!localStorage.getItem(AUTO_BACKUP_INDICATOR_KEY);
+        doneToday = localStorage.getItem(BACKUP_DATE_KEY) === today;
+      } catch (_) { }
+      if (on && !doneToday) await writeNativeBackup();
+      updateBackupBarUI();
+      return;
+    }
+
     let handle = null;
     try { handle = await loadDirectoryHandle(); } catch (_) { }
     if (!handle) { checkDailyBackup(); return; }
@@ -3186,8 +3324,22 @@
       window.location.reload();
     });
 
-    // Register service worker
-    if ('serviceWorker' in navigator) {
+    if (NATIVE) {
+      // The app's files are inside the install, so there is no cache to clear or service worker;
+      // updates come as a new install.
+      refreshAppBtn.classList.add('hidden');
+      try { window.Capacitor.Plugins.App.addListener('backButton', nativeBack); } catch (err) { console.warn(err); }
+      // Android's file picker greys out files whose type it doesn't recognise from ".csv" alone.
+      document.getElementById('csv-file-input').accept =
+        '.csv,text/csv,text/comma-separated-values,application/csv,application/vnd.ms-excel,text/plain';
+      // The bundle email: one button opens the phone's mail app with the files attached.
+      ['gmail', 'yahoo', 'outlook'].forEach(p => document.getElementById(`epm-${p}`).classList.add('hidden'));
+      const mailBtn = document.getElementById('epm-mailto');
+      mailBtn.lastChild.textContent = ' Email app';
+      const desc = emailProviderModal.querySelector('.modal-desc');
+      if (desc) desc.textContent = 'Opens a new email with the CSV and report attached.';
+    } else if ('serviceWorker' in navigator) {
+      // Register service worker
       navigator.serviceWorker.register('./sw.js').catch(() => { });
 
       // Show update banner when a new service worker takes control

@@ -1,0 +1,9 @@
+{
+  "appId": "com.metroutes.outs",
+  "appName": "Meter Reader",
+  "webDir": "www",
+  "android": {
+    "adjustMarginsForEdgeToEdge": "force"
+  },
+  "appendUserAgent": "MeterReader-Android"
+}

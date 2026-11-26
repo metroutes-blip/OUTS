@@ -1,7 +1,7 @@
 {
   "name": "outs-main",
   "version": "1.0.0",
-  "description": "",
+  "description": "Meter Reader (OUTS). The app is the plain web files in this folder; the dependencies are the Android shell and the linter.",
   "main": "app.js",
   "scripts": {
     "lint": "eslint app.js sw.js"
@@ -13,6 +13,17 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.3.0",
-    "globals": "^17.6.0"
+    "globals": "^17.6.0",
+    "@capacitor/cli": "^7.4.0"
+  },
+  "private": true,
+  "dependencies": {
+    "@capacitor/android": "^7.4.0",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/core": "^7.4.0",
+    "@capacitor/filesystem": "^7.0.0",
+    "@capacitor/share": "^7.0.0",
+    "capacitor-email-composer": "^7.0.2",
+    "leaflet": "1.9.4"
   }
 }
