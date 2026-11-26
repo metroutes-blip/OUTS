@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v9.4';
+  const APP_VERSION = 'v9.4.1';
 
   // True inside the Android app (a Capacitor shell around these same files), false in a browser.
   const NATIVE = !!window.androidBridge;
@@ -2801,6 +2801,7 @@
 
   // The phone's Back button: same as the on-screen way back from the screen in front.
   function nativeBack() {
+    if (!commentModal.classList.contains('hidden')) { closeCommentEditor(false); return; }
     if (document.querySelector('.modal-overlay:not(.hidden)')) return;
     const view = document.querySelector('.view:not(.hidden)');
     if (!view || view.id === 'view-home' || view.id === 'view-pin' || view.id === 'view-splash') {
@@ -2810,6 +2811,57 @@
     if (view.id === 'view-map') { document.getElementById('map-nav-bundles').click(); return; }
     const back = view.querySelector('.back-btn');
     if (back) back.click();
+  }
+
+  // Android app: the comment is written in a box at the top of the screen, so the keyboard never covers it.
+  const commentModal = document.getElementById('comment-modal');
+  const commentModalInput = document.getElementById('comment-modal-input');
+
+  function openCommentEditor() {
+    if (!currentRow) return;
+    document.getElementById('comment-modal-meter').textContent =
+      [[currentRow['#'], currentRow['STREET']].filter(Boolean).join(' '), (currentRow['LOC'] || '').trim()]
+        .filter(Boolean).join(' · ');
+    commentModalInput.value = cardDtComments.value;
+    commentModal.classList.remove('hidden');
+    commentModalInput.focus();
+    commentModalInput.setSelectionRange(commentModalInput.value.length, commentModalInput.value.length);
+  }
+
+  function closeCommentEditor(save) {
+    if (save) cardDtComments.value = commentModalInput.value.trim();
+    commentModalInput.blur();
+    commentModal.classList.add('hidden');
+  }
+
+  // Keep the box being typed in above the keyboard: the Keyboard plugin shrinks the app window
+  // for it; if the window wasn't shrunk, room the keyboard's height is added under the page.
+  function initNativeKeyboard() {
+    const kb = { startHeight: window.innerHeight };
+    const typingNow = () => /^(INPUT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '');
+    const fieldInView = () => {
+      const f = document.activeElement;
+      if (!f || !/^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName) || f.closest('.modal-overlay')) return;
+      f.scrollIntoView({ block: 'center' });
+    };
+    const setKeyboardRoom = px => {
+      document.documentElement.style.setProperty('--kb-room', `${px}px`);
+      document.documentElement.classList.toggle('kb-open', px > 0);
+    };
+    const onResize = () => {
+      if (!typingNow()) { kb.startHeight = window.innerHeight; return; } // no keyboard: the full height (also after turning)
+      if (window.innerHeight < kb.startHeight - 80) setTimeout(fieldInView, 50);
+    };
+    window.addEventListener('resize', onResize);
+    const plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Keyboard;
+    if (!plugin || !plugin.addListener) return;
+    plugin.addListener('keyboardWillShow', () => { kb.startHeight = window.innerHeight; });
+    plugin.addListener('keyboardDidShow', info => {
+      const shrunk = window.innerHeight < kb.startHeight - 80;
+      setKeyboardRoom(shrunk ? 120 : ((info && info.keyboardHeight) || 0));
+      setTimeout(fieldInView, 60);
+    });
+    plugin.addListener('keyboardWillHide', () => setKeyboardRoom(0));
   }
 
   // ─── Auto-backup: silent write to authorized folder ───
@@ -3329,6 +3381,17 @@
       // updates come as a new install.
       refreshAppBtn.classList.add('hidden');
       try { window.Capacitor.Plugins.App.addListener('backButton', nativeBack); } catch (err) { console.warn(err); }
+      // Comments: tap the box to write in the editor at the top of the screen.
+      cardDtComments.readOnly = true;
+      cardDtComments.placeholder = 'Tap to write a comment';
+      cardDtComments.addEventListener('click', openCommentEditor);
+      document.getElementById('comment-modal-done').addEventListener('click', () => closeCommentEditor(true));
+      document.getElementById('comment-modal-cancel').addEventListener('click', () => closeCommentEditor(false));
+      // The keyboard's "done" key: Enter saves.
+      commentModalInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); closeCommentEditor(true); }
+      });
+      initNativeKeyboard();
       // Android's file picker greys out files whose type it doesn't recognise from ".csv" alone.
       document.getElementById('csv-file-input').accept =
         '.csv,text/csv,text/comma-separated-values,application/csv,application/vnd.ms-excel,text/plain';

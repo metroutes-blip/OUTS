@@ -1824,6 +1824,36 @@ html, body {
   border-color: var(--accent);
 }
 
+/* Android app: while the keyboard is up, room under the reading screen so the box being typed in can scroll above it. */
+.kb-open .card-dt-body {
+  padding-bottom: calc(var(--bottom-nav-height) + 14px + var(--kb-room, 0px));
+}
+
+/* Android app: the comment editor is pinned to the top, so the keyboard coming up from the bottom never covers it. */
+.modal-overlay.modal-top {
+  align-items: flex-start;
+}
+
+.modal-top .modal-sheet {
+  border-radius: 0 0 18px 18px;
+  padding: calc(20px + env(safe-area-inset-top)) 20px 20px;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-40px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+.comment-modal-input {
+  min-height: 120px;
+  font-size: 1.05rem;
+}
+
+.card-dt-comments-input[readonly] {
+  cursor: pointer;
+}
+
 /* Save button */
 .card-dt-save-wrap {
   padding: 4px 0 8px;

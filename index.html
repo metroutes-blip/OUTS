@@ -861,6 +861,21 @@
     </div>
   </div>
 
+  <!-- Android app: writing a comment in a box at the top of the screen, clear of the keyboard -->
+  <div id="comment-modal" class="modal-overlay modal-top hidden">
+    <div class="modal-sheet">
+      <h2 class="modal-title">Comments</h2>
+      <p class="modal-desc" id="comment-modal-meter"></p>
+      <textarea id="comment-modal-input" class="card-dt-comments-input comment-modal-input"
+                rows="4" enterkeyhint="done" placeholder="Type the comment…"
+                autocorrect="on" autocapitalize="on"></textarea>
+      <div class="modal-actions">
+        <button class="modal-cancel" id="comment-modal-cancel">Cancel</button>
+        <button class="modal-confirm" id="comment-modal-done">Done</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Recover Deleted Bundles Modal -->
   <div id="recover-modal" class="modal-overlay hidden">
     <div class="modal-sheet recover-modal-sheet">

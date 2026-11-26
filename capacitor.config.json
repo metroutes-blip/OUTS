@@ -5,5 +5,10 @@
   "android": {
     "adjustMarginsForEdgeToEdge": "force"
   },
-  "appendUserAgent": "MeterReader-Android"
+  "appendUserAgent": "MeterReader-Android",
+  "plugins": {
+    "Keyboard": {
+      "resizeOnFullScreen": true
+    }
+  }
 }
