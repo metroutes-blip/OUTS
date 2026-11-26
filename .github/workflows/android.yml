@@ -44,7 +44,8 @@ jobs:
 
       - name: Version, permissions and icons
         run: |
-          VERSION=$(sed -n "s/^ *const APP_VERSION = 'v\{0,1\}\(.*\)';/\1/p" app.js)
+          # app.js has Windows line endings: drop the \r so it doesn't end up inside build.gradle.
+          VERSION=$(tr -d '\r' < app.js | sed -n "s/^ *const APP_VERSION = 'v\{0,1\}\(.*\)';/\1/p")
           if [ -z "$VERSION" ]; then echo "::error::APP_VERSION not found in app.js"; exit 1; fi
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           sed -i "s/versionCode 1$/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"$VERSION\"/" android/app/build.gradle
